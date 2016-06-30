@@ -91,7 +91,7 @@ if "SPLUNK NOT" in splunk_pid:
 
 #Read in all Access Tokens from Homeview.conf
 proc = []
-settings = splunk.clilib.cli_common.readConfFile(splunk_home+"/etc/apps/NestAppforSplunk/local/nest_tokens.conf")
+settings = splunk.clilib.cli_common.readConfFile(splunk_home+"/etc/apps/NestAddonforSplunk/local/nest_tokens.conf")
 for item in settings.iteritems():
         for key in item[1].iteritems():
 		token = key[1]
