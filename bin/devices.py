@@ -57,7 +57,7 @@ def get_devices(access_token):
 		output_str = line.replace('data: {"path"','{"path"')
 		#print(str(output_str))
 		sys.stdout.write(output_str)
-    return true
+    return True
 
 #Set stdout to Unbuffered Version
 sys.stdout = Unbuffered(sys.stdout)
