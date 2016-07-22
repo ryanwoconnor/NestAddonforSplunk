@@ -18,33 +18,34 @@ class Unbuffered:
         self.stream.flush()
     def __getattr__(self, attr):
         return getattr(self.stream, attr)
-def check_splunk(process_id,self_pid,devices):
+def check_splunk(process_id,self_pid,procs):
         splunk_running = True
-        while splunk_running:
+        devices_running = True
+        sys.stderr.write("entering check_splunk")
+        while splunk_running and devices_running:
 		try:
 			os.kill(int(process_id), 0)
 		except OSError:
+			sys.stderr.write("error: detected splunk not running")
 			splunk_running = False
 			continue
 		else:
 			splunk_running = True
+                for p in procs:
+                        if not p.is_alive():
+                            sys.stderr.write("error: detected devices spawn no longer running")
+                            devices_running = False
                 time.sleep(1)
         if splunk_running is False:
-        	pids = [pid for pid in os.listdir('/proc') if pid.isdigit()]
-                for pid in pids:
-                        try:
-				cmd = open(os.path.join('/proc', pid, 'cmdline'), 'rb').read()
-				if 'devices' in cmd:
-					#print "Found python running"
-					os.kill(int(pid), signal.SIGTERM)
-				#else:
-					#print ""
-#					os.kill(int(self_pid), signal.SIGTERM)
-			except IOError: # proc has already terminated
-                                continue
+            try:
+                for p in procs:
+                    p.terminate()
+            except IOError: # proc has already terminated
+                pass
+        return True
 def get_devices(access_token):
     headers = {"Authorization": "bearer ", "Accept": "text/event-stream"}
-    response = requests.get("https://developer-api.nest.com/?auth=" + access_token, headers=headers, stream=True)
+    response = requests.get("https://developer-api.nest.com/?auth=" + access_token, headers=headers, stream=True, timeout=3600)
     for line in response.iter_lines():
 		#ts = time.time()
 		#st = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
@@ -100,9 +101,8 @@ for item in settings.iteritems():
 		devices.start()
 		proc.append(devices)
 #Create a Process to Check if Splunk is running and kill all child processes if Splunk dies or Splunk PID Changes
-splunk_checker = Process(target=check_splunk, args=(splunk_pid,current_pid,devices))
-splunk_checker.start()
-for p in proc:
-	devices.join()
+if check_splunk(splunk_pid,current_pid,proc):
+    for p in proc:
+        p.terminate()
 #If All Subprocesses Die, Kill Python Script
 sys.exit()
