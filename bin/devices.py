@@ -141,12 +141,9 @@ for item in settings.iteritems():
 		devices = Process(target=get_devices, args=(token,))
 		devices.start()
 		proc.append(devices)
-if "Darwin" in OS:
-	print 'Mac'
-else:
-	#Create a Process to Check if Splunk is running and kill all child processes if Splunk dies or Splunk PID Changes
-	if check_splunk(splunk_pid,current_pid,proc):
-		for p in proc:
-			p.terminate()
-	#If All Subprocesses Die, Kill Python Script
-	sys.exit()
+#Create a Process to Check if Splunk is running and kill all child processes if Splunk dies or Splunk PID Changes
+if check_splunk(splunk_pid,current_pid,proc):
+	for p in proc:
+		p.terminate()
+#If All Subprocesses Die, Kill Python Script
+sys.exit()
