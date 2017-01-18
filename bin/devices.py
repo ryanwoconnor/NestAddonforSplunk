@@ -94,6 +94,80 @@ current_pid = os.getpid()
 #Get OS
 OS = platform.platform()
 
+#True/False statements for various nest stanza settings
+nest_index_time_too_high = False
+nest_index_time_found = False
+nest_index_found = False
+nest_index_frozen_setting = 0
+
+
+#Nest Stanza variable
+nest_stanza = '[nest]'
+
+#We need to ensure the Nest Index Retention is only 10 days. This entire section ensures there is a config file that sets the retention time to 10days when Splunk starts.
+#We will start out by checking for a nest stanza.
+#We will also attempt to build any current nest stanza into the variable nest_stanza in case we simply need to replace the frozentimeperiodinsecs attribute
+settings = splunk.clilib.cli_common.readConfFile(splunk_home+"/etc/system/local/indexes.conf")
+for item in settings.iteritems():
+        #Check if there is a nest stanza in the system local config file
+        if item[0]=='nest':
+                nest_index_found = True
+                for key in item[1].iteritems():
+                        nest_stanza+='\n'
+                        nest_stanza=nest_stanza+key[0]+'='+key[1]
+                        if key[0]=='frozenTimePeriodInSecs':
+                                #Check if the frozenTimePeriodInSecs is set correctly or not
+                                if int(key[1])>864000:
+                                        print 'Setting is too high'
+                                        nest_index_time_too_high = True
+                                        nest_index_time_found = True
+                                        nest_index_frozen_setting = key[1]
+                                if int(key[1])==864000:
+                                        print 'Setting is Good'
+                                        nest_index_time_found = True
+
+#if frozenTimePeriodInSecs found and too high
+if nest_index_found and nest_index_time_found and nest_index_time_too_high:
+        # Read in the local indeexes file
+        f = open(splunk_home+'/etc/system/local/indexes.conf', 'r')
+        filedata = f.read()
+        f.close()
+
+        # Replace the target string
+        newdata = filedata.replace(str(nest_index_frozen_setting), '864000')
+
+        # Write the file out again
+        f = open(splunk_home+'/etc/system/local/indexes.conf', 'w')
+        f.write(newdata)
+        f.close()
+
+#if frozenTimePeriodInSecs not found but the nest stanza was found
+if nest_index_found and nest_index_time_found==False:
+        # Read in the local indexes file
+        f = open(splunk_home+'/etc/system/local/indexes.conf', 'r')
+        filedata = f.read()
+        f.close()
+
+        # Replace the target string
+        newdata = filedata.replace('[nest]', '[nest]\nfrozenTimePeriodInSecs = 864000')
+
+        # Write the file out again
+        f = open(splunk_home+'/etc/system/local/indexes.conf', 'w')
+        f.write(newdata)
+        f.close()
+
+#if nest stanza wasn't found in system local
+if nest_index_found==False:
+        file = open(splunk_home+'/etc/system/local/indexes.conf', 'a')
+        file.write('[nest]')
+        file.write('\n')
+        file.write('homePath = $SPLUNK_DB/nestdb/db\n')
+        file.write('coldPath = $SPLUNK_DB/nestdb/db\n')
+        file.write('thawedPath = $SPLUNK_DB/nestdb/db\n')
+        file.write('frozenTimePeriodInSecs = 864000\n')
+        file.write('maxTotalDataSizeMB = 512000')
+
+
 #What to do for Macs
 if "Darwin" in OS:
 	processes = subprocess.Popen(['ps','aux'], stdout=subprocess.PIPE).stdout.readlines() 
