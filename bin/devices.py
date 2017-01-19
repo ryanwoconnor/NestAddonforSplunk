@@ -80,6 +80,36 @@ def get_devices(access_token):
 		sys.stdout.write(output_str)
     return True
 
+def enforce_retention(sessionKey):
+    #ensure the Nest Index Retention is only 10 days
+    if len(sessionKey) == 0:
+       sys.stderr.write("Did not receive a session key. Please enable passAuth in inputs.conf for this script\n")
+       exit(2)
+
+    try:
+        nest_input = splunk.rest.simpleRequest('/services/data/inputs/script/.%252Fbin%252Fdevices.py?output_mode=json', method='GET', sessionKey=sessionKey, raiseAllErrors=True)
+    except Exception:
+        sys.stderr.write("input doesn't exist\n")
+
+    nest_input_json = json.loads(nest_input[1])
+    nest_index_name = nest_input_json['entry'][0]['content']['index']
+
+    try:
+        nest_index = splunk.rest.simpleRequest('/services/data/indexes/' + nest_index_name  + '?output_mode=json', method='GET', sessionKey=sessionKey, raiseAllErrors=True)
+    except Exception:
+        sys.stderr.write("index doesn't exist\n")
+    
+    nest_json = json.loads(nest_index[1])
+    nest_frozen_time = nest_json['entry'][0]['content']['frozenTimePeriodInSecs']
+    index_edit_list = nest_json['entry'][0]['links']['edit']
+    
+    postArgs = {"frozenTimePeriodInSecs": 864000}
+    if nest_frozen_time > 864000:
+        sys.stderr.write("nest index retention is too high, adjusting down to 10 days\n")
+        splunk.rest.simpleRequest(index_edit_list, method='POST', sessionKey=sessionKey, raiseAllErrors=True, postargs=postArgs)
+
+    return True
+
 
 #Set stdout to Unbuffered Version
 sys.stdout = Unbuffered(sys.stdout)
@@ -96,40 +126,9 @@ current_pid = os.getpid()
 #Get OS
 OS = platform.platform()
 
-#Initialize True/False statements to known starting values for various nest stanza settings
-nest_index_time_too_high = False
-nest_index_time_found = False
-nest_index_found = False
-nest_index_frozen_setting = 0
-
-#Nest Stanza variable
-nest_stanza = '[nest]'
-
-#We need to ensure the Nest Index Retention is only 10 days. This entire section ensures there is a config file that sets the retention time to 10days when Splunk starts.
-#We will start out by checking for a nest stanza.
-#We will also attempt to build any current nest stanza into the variable nest_stanza in case we simply need to replace the frozentimeperiodinsecs attribute
+#get splunk session key
 sessionKey = sys.stdin.readline().strip()
-if len(sessionKey) == 0:
-   sys.stderr.write("Did not receive a session key from splunkd. Please enable passAuth in inputs.conf for this script\n")
-   exit(2)
-
-try:
-    nest_index = splunk.rest.simpleRequest('/services/data/indexes/nest?output_mode=json', method='GET', sessionKey=sessionKey, raiseAllErrors=True)
-except Exception:
-    sys.stderr.write("index doesn't exist\n")
-
-nest_json = json.loads(nest_index[1])
-nest_frozen_time = nest_json['entry'][0]['content']['frozenTimePeriodInSecs']
-index_edit_list = nest_json['entry'][0]['links']['edit']
-
-postArgs = {"frozenTimePeriodInSecs": 864000}
-if nest_frozen_time > 864000:
-    sys.stderr.write("nest index retention is too high\n")
-#    try:
-    splunk.rest.simpleRequest(index_edit_list, method='POST', sessionKey=sessionKey, raiseAllErrors=True, postargs=postArgs)
-#    except Exception:
-#       sys.stderr.write("index couldn't be updated\n")
-#       sys.stderr.write(str(Exception) + "\n")
+enforce_retention(sessionKey)
 
 #start the real work
 #What to do for Macs
