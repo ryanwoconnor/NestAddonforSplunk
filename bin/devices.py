@@ -11,6 +11,7 @@ import signal
 import sys
 import platform
 import subprocess
+import splunk.rest
 
 class Unbuffered:
     def __init__(self, stream):
@@ -21,23 +22,23 @@ class Unbuffered:
     def __getattr__(self, attr):
         return getattr(self.stream, attr)
 def check_splunk(process_id,self_pid,procs):
-		#Assume Splunk is running
+	#Assume Splunk is running
         splunk_running = True
         #Assume devices.py is running
         devices_running = True
         
         #Output message regarding this check
-        sys.stderr.write("entering check_splunk")
+        sys.stderr.write("entering check_splunk\n")
         
         #While splunk is supposedly running and devices is running, do some stuff
         while splunk_running and devices_running:
         
-        #Try to kill the splunk pid to see if it's still alive
+        	#Try to kill the splunk pid to see if it's still alive
 		try:
 			os.kill(int(process_id), 0)
 		#If it's not, notify us and change splunk to not running
 		except OSError:
-			sys.stderr.write("error: detected splunk not running")
+			sys.stderr.write("error: detected splunk not running\n")
 			splunk_running = False
 			continue
 		#If Splunk isn't running, do some more checks
@@ -48,7 +49,7 @@ def check_splunk(process_id,self_pid,procs):
                 for p in procs:
                 		#If each process isn't running, detect it's not running and set variable
                         if not p.is_alive():
-                            sys.stderr.write("error: detected devices spawn no longer running")
+                            sys.stderr.write("error: detected devices spawn no longer running\n")
                             devices_running = False
                 #If the process is running, go back to sleep
                 time.sleep(1)
@@ -79,6 +80,7 @@ def get_devices(access_token):
 		sys.stdout.write(output_str)
     return True
 
+
 #Set stdout to Unbuffered Version
 sys.stdout = Unbuffered(sys.stdout)
 
@@ -94,12 +96,11 @@ current_pid = os.getpid()
 #Get OS
 OS = platform.platform()
 
-#True/False statements for various nest stanza settings
+#Initialize True/False statements to known starting values for various nest stanza settings
 nest_index_time_too_high = False
 nest_index_time_found = False
 nest_index_found = False
 nest_index_frozen_setting = 0
-
 
 #Nest Stanza variable
 nest_stanza = '[nest]'
@@ -107,67 +108,30 @@ nest_stanza = '[nest]'
 #We need to ensure the Nest Index Retention is only 10 days. This entire section ensures there is a config file that sets the retention time to 10days when Splunk starts.
 #We will start out by checking for a nest stanza.
 #We will also attempt to build any current nest stanza into the variable nest_stanza in case we simply need to replace the frozentimeperiodinsecs attribute
-settings = splunk.clilib.cli_common.readConfFile(splunk_home+"/etc/system/local/indexes.conf")
-for item in settings.iteritems():
-        #Check if there is a nest stanza in the system local config file
-        if item[0]=='nest':
-                nest_index_found = True
-                for key in item[1].iteritems():
-                        nest_stanza+='\n'
-                        nest_stanza=nest_stanza+key[0]+'='+key[1]
-                        if key[0]=='frozenTimePeriodInSecs':
-                                #Check if the frozenTimePeriodInSecs is set correctly or not
-                                if int(key[1])>864000:
-                                        print 'Setting is too high'
-                                        nest_index_time_too_high = True
-                                        nest_index_time_found = True
-                                        nest_index_frozen_setting = key[1]
-                                if int(key[1])==864000:
-                                        print 'Setting is Good'
-                                        nest_index_time_found = True
+sessionKey = sys.stdin.readline().strip()
+if len(sessionKey) == 0:
+   sys.stderr.write("Did not receive a session key from splunkd. Please enable passAuth in inputs.conf for this script\n")
+   exit(2)
 
-#if frozenTimePeriodInSecs found and too high
-if nest_index_found and nest_index_time_found and nest_index_time_too_high:
-        # Read in the local indeexes file
-        f = open(splunk_home+'/etc/system/local/indexes.conf', 'r')
-        filedata = f.read()
-        f.close()
+try:
+    nest_index = splunk.rest.simpleRequest('/services/data/indexes/nest?output_mode=json', method='GET', sessionKey=sessionKey, raiseAllErrors=True)
+except Exception:
+    sys.stderr.write("index doesn't exist\n")
 
-        # Replace the target string
-        newdata = filedata.replace(str(nest_index_frozen_setting), '864000')
+nest_json = json.loads(nest_index[1])
+nest_frozen_time = nest_json['entry'][0]['content']['frozenTimePeriodInSecs']
+index_edit_list = nest_json['entry'][0]['links']['edit']
 
-        # Write the file out again
-        f = open(splunk_home+'/etc/system/local/indexes.conf', 'w')
-        f.write(newdata)
-        f.close()
+postArgs = {"frozenTimePeriodInSecs": 864000}
+if nest_frozen_time > 864000:
+    sys.stderr.write("nest index retention is too high\n")
+#    try:
+    splunk.rest.simpleRequest(index_edit_list, method='POST', sessionKey=sessionKey, raiseAllErrors=True, postargs=postArgs)
+#    except Exception:
+#       sys.stderr.write("index couldn't be updated\n")
+#       sys.stderr.write(str(Exception) + "\n")
 
-#if frozenTimePeriodInSecs not found but the nest stanza was found
-if nest_index_found and nest_index_time_found==False:
-        # Read in the local indexes file
-        f = open(splunk_home+'/etc/system/local/indexes.conf', 'r')
-        filedata = f.read()
-        f.close()
-
-        # Replace the target string
-        newdata = filedata.replace('[nest]', '[nest]\nfrozenTimePeriodInSecs = 864000')
-
-        # Write the file out again
-        f = open(splunk_home+'/etc/system/local/indexes.conf', 'w')
-        f.write(newdata)
-        f.close()
-
-#if nest stanza wasn't found in system local
-if nest_index_found==False:
-        file = open(splunk_home+'/etc/system/local/indexes.conf', 'a')
-        file.write('[nest]')
-        file.write('\n')
-        file.write('homePath = $SPLUNK_DB/nestdb/db\n')
-        file.write('coldPath = $SPLUNK_DB/nestdb/db\n')
-        file.write('thawedPath = $SPLUNK_DB/nestdb/db\n')
-        file.write('frozenTimePeriodInSecs = 864000\n')
-        file.write('maxTotalDataSizeMB = 512000')
-
-
+#start the real work
 #What to do for Macs
 if "Darwin" in OS:
 	processes = subprocess.Popen(['ps','aux'], stdout=subprocess.PIPE).stdout.readlines() 
