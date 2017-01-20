@@ -21,6 +21,42 @@ def logger(message):
 def do_scheme():
     print SCHEME
 
+def get_config():
+    config = {}
+    try:
+        # read everything from stdin
+        config_str = sys.stdin.read()
+        # parse the config XML
+        doc = xml.dom.minidom.parseString(config_str)
+        root = doc.documentElement
+        conf_node = root.getElementsByTagName("configuration")[0]
+        if conf_node:
+            logging.debug("XML: found configuration")
+            stanza = conf_node.getElementsByTagName("stanza")[0]
+            if stanza:
+                stanza_name = stanza.getAttribute("name")
+                if stanza_name:
+                    logging.debug("XML: found stanza " + stanza_name)
+                    config["name"] = stanza_name
+                    params = stanza.getElementsByTagName("param")
+                    for param in params:
+                        param_name = param.getAttribute("name")
+                        logging.debug("XML: found param '%s'" % param_name)
+                        if param_name and param.firstChild and \
+                           param.firstChild.nodeType == param.firstChild.TEXT_NODE:
+                            data = param.firstChild.data
+                            config[param_name] = data
+                            logging.debug("XML: '%s' -> '%s'" % (param_name, data))
+        sessn_key = root.getElementsByTagName("session_key")[0]
+        if sessn_key and sessn_key.firstChild and \
+           sessn_key.firstChild.nodeType == sessn_key.firstChild.TEXT_NODE:
+            config["session_key"] = sessn_key.firstChild.data
+        if not config:
+            raise Exception, "Invalid configuration received from Splunk."
+    except Exception, e:
+        raise Exception, "Error getting Splunk configuration via STDIN: %s" % str(e)
+    return config
+
 def get_devices(access_token):
     headers = {"Authorization": "bearer ", "Accept": "text/event-stream"}
     response = requests.get("https://developer-api.nest.com/?auth=" + access_token, headers=headers, stream=True, timeout=3600)
@@ -48,7 +84,9 @@ def enforce_retention(sessionKey):
 
     nest_input_json = json.loads(nest_input[1])
     nest_index_name = nest_input_json['entry'][0]['content']['index']
-    nest_sourcetype = nest_input_json['entry'][0]['content']['sourcetype']
+    
+    #index will be passed in from stdin: <input><configuration><stanza name="nest://<name>"><param name="index">index</param>
+    #sourcetype will probably be passed in from stdin: <input><configuration><stanza name="nest://<name>"><param name="sourcetype">sourcetype</param>
     
     try:
         nest_index = splunk.rest.simpleRequest('/services/data/indexes/' + nest_index_name  + '?output_mode=json', method='GET', sessionKey=sessionKey, raiseAllErrors=True)
@@ -70,8 +108,6 @@ def enforce_retention(sessionKey):
 sys.stdout = Unbuffered(sys.stdout)
 splunk_home = os.path.expandvars("$SPLUNK_HOME")
 splunk_pid = open(os.path.join(splunk_home,"var","run", "splunk", "conf-mutator.pid"), 'rb').read()
-sessionKey = sys.stdin.readline().strip()
-logger("variables initialized")
 
 SCHEME = """<scheme>
     <title>Nest</title>
@@ -95,6 +131,7 @@ SCHEME = """<scheme>
 </scheme>
 """
 
+logger("variables initialized")
 
 #process arguments
 if len(sys.argv) > 1:
@@ -102,6 +139,8 @@ if len(sys.argv) > 1:
         do_scheme()
         sys.exit(0)
 else:
+    config = get_config()
+    sessionKey = config["session_key"]
     #start the real work
     #enforce the required retention policy
     enforce_retention(sessionKey)
