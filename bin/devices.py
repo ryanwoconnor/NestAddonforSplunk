@@ -1,4 +1,6 @@
 from multiprocessing import Process
+from signal import signal, SIGTERM
+import atexit
 import requests
 import os
 import time
@@ -89,6 +91,11 @@ def enforce_retention(sessionKey):
     
     return True
 
+def clean_children():
+    for p in proc:
+        p.terminate()
+    
+
 #set initial veriables
 sys.stdout = Unbuffered(sys.stdout)
 splunk_home = os.path.expandvars("$SPLUNK_HOME")
@@ -101,6 +108,8 @@ enforce_retention(sessionKey)
 
 #start the real work
 #Read in all Access Tokens from nest_tokens.conf
+atexit.register(clean_children)
+
 proc = []
 settings = splunk.clilib.cli_common.getMergedConf("nest_tokens")
 for item in settings.iteritems():
@@ -113,7 +122,9 @@ for item in settings.iteritems():
 
 #Create a Process to Check if Splunk is running and kill all child processes if Splunk dies or Splunk PID Changes
 if check_splunk(splunk_pid,proc):
-    for p in proc:
-        p.terminate()
+    clean_childre()
+
+for sig in (SIGABRT, SIGBREAK, SIGILL, SIGINT, SIGSEGV, SIGTERM):
+    signal(sig, clean)
 
 sys.exit()
