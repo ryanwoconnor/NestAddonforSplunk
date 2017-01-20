@@ -104,9 +104,9 @@ enforce_retention(sessionKey)
 proc = []
 settings = splunk.clilib.cli_common.getMergedConf("nest_tokens")
 for item in settings.iteritems():
-    for key in item[1].iteritems():
-        token = key[1]
-        #Create a new process for each nest key (access_token)
+    for access_token in item[1].iteritems():
+        token = access_token[1]
+        #Create a new process for each nest access_token
         devices = Process(target=get_devices, args=(token,))
         devices.start()
         proc.append(devices)
