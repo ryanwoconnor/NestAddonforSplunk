@@ -94,7 +94,6 @@ def enforce_retention(sessionKey):
 def clean_children():
     for p in proc:
         p.terminate()
-    
 
 #set initial veriables
 sys.stdout = Unbuffered(sys.stdout)
@@ -122,9 +121,9 @@ for item in settings.iteritems():
 
 #Create a Process to Check if Splunk is running and kill all child processes if Splunk dies or Splunk PID Changes
 if check_splunk(splunk_pid,proc):
-    clean_childre()
+    clean_children()
 
 for sig in (SIGABRT, SIGBREAK, SIGILL, SIGINT, SIGSEGV, SIGTERM):
-    signal(sig, clean)
+    signal(sig, clean_children)
 
 sys.exit()
