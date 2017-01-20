@@ -6,6 +6,7 @@ import json
 import sys
 import platform
 import splunk.rest
+import logging
 
 class Unbuffered:
     def __init__(self, stream):
@@ -15,8 +16,6 @@ class Unbuffered:
         self.stream.flush()
     def __getattr__(self, attr):
         return getattr(self.stream, attr)
-def logger(message):
-    sys.stderr.write(message.strip() + "\n")
 
 def do_scheme():
     print SCHEME
@@ -74,13 +73,13 @@ def get_devices(access_token):
 def enforce_retention(sessionKey):
     #ensure the Nest Index Retention is only 10 days
     if len(sessionKey) == 0:
-       logger("ERROR Did not receive a session key. Please enable passAuth in inputs.conf for this script")
+       logging.error("Did not receive a session key. Please enable passAuth in inputs.conf for this script")
        exit(2)
     
     try:
         nest_input = splunk.rest.simpleRequest('/services/data/inputs/script/.%252Fbin%252Fdevices.py?output_mode=json', method='GET', sessionKey=sessionKey, raiseAllErrors=True)
     except Exception:
-        logger("INFO Nest devices.py input doesn't exist")
+        logging.info("Nest devices.py input doesn't exist")
 
     nest_input_json = json.loads(nest_input[1])
     nest_index_name = nest_input_json['entry'][0]['content']['index']
@@ -91,7 +90,7 @@ def enforce_retention(sessionKey):
     try:
         nest_index = splunk.rest.simpleRequest('/services/data/indexes/' + nest_index_name  + '?output_mode=json', method='GET', sessionKey=sessionKey, raiseAllErrors=True)
     except Exception:
-        logger("INFO " + nest_index_name + " index doesn't exist")
+        logging.info(nest_index_name + " index doesn't exist")
     
     nest_json = json.loads(nest_index[1])
     nest_frozen_time = nest_json['entry'][0]['content']['frozenTimePeriodInSecs']
@@ -99,10 +98,18 @@ def enforce_retention(sessionKey):
     
     postArgs = {"frozenTimePeriodInSecs": 864000}
     if nest_frozen_time > 864000:
-        logger("INFO nest index retention is too high, adjusting down to 10 days")
+        logging.info("nest index retention is too high, adjusting down to 10 days")
         splunk.rest.simpleRequest(index_edit_list, method='POST', sessionKey=sessionKey, raiseAllErrors=True, postargs=postArgs)
     
     return True
+
+# set up logging suitable for splunkd consumption
+logging.root
+logging.root.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(levelname)s %(message)s')
+handler = logging.StreamHandler(stream=sys.stderr)
+handler.setFormatter(formatter)
+logging.root.addHandler(handler)
 
 #set initial veriables
 sys.stdout = Unbuffered(sys.stdout)
@@ -131,7 +138,7 @@ SCHEME = """<scheme>
 </scheme>
 """
 
-logger("variables initialized")
+logging.info("variables initialized")
 
 #process arguments
 if len(sys.argv) > 1:
