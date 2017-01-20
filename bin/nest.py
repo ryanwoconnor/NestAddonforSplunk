@@ -1,4 +1,3 @@
-from multiprocessing import Process
 import requests
 import os
 import time
@@ -6,7 +5,6 @@ import splunk.clilib.cli_common
 import json
 import sys
 import platform
-import subprocess
 import splunk.rest
 
 class Unbuffered:
@@ -20,29 +18,8 @@ class Unbuffered:
 def logger(message):
     sys.stderr.write(message.strip() + "\n")
 
-def check_splunk(process_id,procs):
-    #initialize variables
-    splunk_running = True
-    devices_running = True
-    
-    # keep checking that splunkd and child procs are still alive
-    while splunk_running and devices_running:
-        #check that the splunk process is alive
-        try:
-            os.kill(int(process_id), 0)
-        #If it's not alive, notify and drop out of the loop
-        except OSError:
-            logger("ERROR detected splunk not running")
-            splunk_running = False
-            continue
-        for p in procs:
-            #If any of the child processes isn't running, notify and drop out of the loop
-            if not p.is_alive():
-                logger("ERROR detected child process for devices longer running")
-                devices_running = False
-        #If the processes are all running, go back to sleep
-        time.sleep(1)
-    return True
+def do_scheme():
+    print SCHEME
 
 def get_devices(access_token):
     headers = {"Authorization": "bearer ", "Accept": "text/event-stream"}
@@ -96,24 +73,43 @@ splunk_pid = open(os.path.join(splunk_home,"var","run", "splunk", "conf-mutator.
 sessionKey = sys.stdin.readline().strip()
 logger("variables initialized")
 
-#enforce the required retention policy
-enforce_retention(sessionKey)
+SCHEME = """<scheme>
+    <title>Nest</title>
+    <description>Get data from Nest Learning Thermostat and/or Nest Protect.</description>
+    <streaming_mode>simple</streaming_mode>
 
-#start the real work
-#Read in all Access Tokens from nest_tokens.conf
-proc = []
-settings = splunk.clilib.cli_common.getMergedConf("nest_tokens")
-for item in settings.iteritems():
-    for access_token in item[1].iteritems():
-        token = access_token[1]
-        #Create a new process for each nest access_token
-        devices = Process(target=get_devices, args=(token,))
-        devices.start()
-        proc.append(devices)
+    <endpoint>
+        <args>
+            <arg name="name">
+                <title>Resource name</title>
+                <description>The Nest resource name without the leading nest://.</description>
+            </arg>
 
-#Create a Process to Check if Splunk is running and kill all child processes if Splunk dies or Splunk PID Changes
-if check_splunk(splunk_pid,proc):
-    for p in proc:
-        p.terminate()
+            <arg name="access_token">
+                <title>Next access_token</title>
+                <description>Your Nest access_token. See README.md for details</description>
+                <validation>validate(match('access_tokeni','^c\.\w{144}$'), "Ensure access_token is correct")</validation>
+            </arg>
+        </args>
+    </endpoint>
+</scheme>
+"""
+
+
+#process arguments
+if len(sys.argv) > 1:
+    if sys.argv[1] == "--scheme":
+        do_scheme()
+        sys.exit(0)
+else:
+    #start the real work
+    #enforce the required retention policy
+    enforce_retention(sessionKey)
+    #Read in all Access Tokens from nest_tokens.conf
+    settings = splunk.clilib.cli_common.getMergedConf("nest_tokens")
+    for item in settings.iteritems():
+        for access_token in item[1].iteritems():
+            token = access_token[1]
+            devices = get_devices(token)
 
 sys.exit()
