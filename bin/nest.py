@@ -128,10 +128,10 @@ SCHEME = """<scheme>
                 <description>The Nest resource name without the leading nest://.</description>
             </arg>
 
-            <arg name="access_token">
-                <title>Next access_token</title>
+            <arg name="nest_access_token">
+                <title>Nest access_token</title>
                 <description>Your Nest access_token. See README.md for details</description>
-                <validation>validate(match('access_tokeni','^c\.\w{144}$'), "Ensure access_token is correct")</validation>
+                <validation>validate(match('nest_access_token','^c\.\w{144}$'), "Ensure access_token is correct")</validation>
             </arg>
         </args>
     </endpoint>
@@ -154,8 +154,8 @@ else:
     #Read in all Access Tokens from nest_tokens.conf
     settings = splunk.clilib.cli_common.getMergedConf("nest_tokens")
     for item in settings.iteritems():
-        for access_token in item[1].iteritems():
-            token = access_token[1]
+        for nest_access_token in item[1].iteritems():
+            token = nest_access_token[1]
             devices = get_devices(token)
 
 sys.exit()
