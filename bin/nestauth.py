@@ -5,47 +5,50 @@ import urllib, json
 class ConfigApp(admin.MConfigHandler):
     def setup(self):
         if self.requestedAction == admin.ACTION_EDIT:
-            for arg in ['code','oauth2_client_id']:
+            for arg in ['code', 'nest_client_id']:
                 self.supportedArgs.addOptArg(arg)
 
     def handleList(self, confInfo):
         inputDict = self.readConf("inputs")
-        confInfo['default'].append('oauth2_client_id', inputDict['box://myboxinput']['oauth2_client_id'])
-        confInfo['default'].append('code','')
+        if None != confDict:
+            for stanza, settings in confDict.items():
+                for key, val in settings.items():
+                    if key in ['nest_client_id'] and val in [None, '']:
+                        val = ''
+                    if key in ['nest_client_secret'] and val in [None, '']:
+                        val = ''
+                    if key in ['nest_access_token'] and val in [None, '']:
+                        val = ''
+                    confInfo[stanza].append(key, val)
 
     def handleEdit(self, confInfo):
         name = self.callerArgs.id
         args = self.callerArgs
 
-        inputDict = self.readConf("inputs")
+        client_id = setting['nest_client_id']
+        client_secret = setting['nest_client_secret']
+        access_token = setting['nest_access_token']
 
-        for stanza, setting in inputDict.items():
-            if stanza == 'box://myboxinput':
-                client_id = setting['oauth2_client_id']
-                client_secret = setting['oauth2_client_secret']
-                endpoint = setting['oauth2_refresh_url']
+        endpoint = 'https://api.home.nest.com/oauth2/access_token'
 
-                code = self.callerArgs.data['code'][0]
+        code = self.callerArgs.data['code'][0]
 
-                params = {}
-                params['grant_type'] = 'authorization_code'
-                params['code'] = code
-                params['client_id'] = client_id
-                params['client_secret'] = client_secret
+        params = {}
+        params['client_id'] = client_id
+        params['code'] = code
+        params['client_secretclient_secret'] = 'STATE'
+        params['grant_type'] = 'authorization_code'
 
-                p = urllib.urlencode(params)
-                f = urllib.urlopen(endpoint, p)
-                codes = json.loads(f.read())
+        p = urllib.urlencode(params)
+        f = urllib.urlopen(endpoint, p)
+        codes = json.loads(f.read())
 
-                output = { 'oauth2_access_token': [], 'oauth2_refresh_token': [] }
+        output = { 'nest_access_token': [], 'nest_refresh_token': [] }
 
-                output['oauth2_access_token'].append(codes['access_token'])
-                output['oauth2_refresh_token'].append(codes['refresh_token'])
+        output['nest_access_token'].append(codes['access_token'])
 
-                self.writeConf('inputs', stanza, output )
+        self.writeConf('inputs', stanza, output)
 
-                confInfo['default'].append('code', '' )
-
-                en.getEntities('data/inputs/box/_reload', sessionKey = self.getSessionKey(), namespace='BoxAppForSplunk', owner='nobody')
+        en.getEntities('data/inputs/nest/_reload', sessionKey = self.getSessionKey(), namespace='NestAddonforSplunk', owner='nobody')
 
 admin.init(ConfigApp, admin.CONTEXT_NONE)
