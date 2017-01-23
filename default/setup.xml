@@ -1,0 +1,97 @@
+<setup>
+	<block title="Nest REST API Setup" endpoint="nest/nestauth" entity="default">
+		<text><![CDATA[
+<script>
+function addStylesheet( filename )
+{
+	if( document.createStyleSheet )
+	{
+		document.createStyleSheet(filename);
+	}
+	else
+	{
+		var link = $("<link>");
+		link.attr({type: 'text/css',rel: 'stylesheet', href: filename});
+		$("head").append( link );
+	}
+}
+
+function GetURLParameter(sParam)
+{
+	var sPageURL = window.location.search.substring(1);
+	var sURLVariables = sPageURL.split('&');
+	for (var i = 0; i < sURLVariables.length; i++)
+	{
+		var sParameterName = sURLVariables[i].split('=');
+		if (sParameterName[0] == sParam)
+		{
+			return sParameterName[1];
+		}
+	}
+}
+
+$(document).ready(function()
+{
+	theCode = GetURLParameter('code');
+	//addStylesheet('/static/app/NestAddonforSplunk/nestconnect.css');
+	var clientId = $("#\\/nest\\/nestauth\\/default\\/nest_client_id_id").val();
+
+	$('input:text').each(function() {
+		$("<input type='hidden' />").attr({ name: this.name, value: this.value, id: this.id }).insertBefore(this);
+	}).remove();
+
+	$('label').each(function(){
+		this.remove();
+	});
+
+	if ( !clientId )
+	{
+		$('#post_nest_auth').parent().hide();
+		$('#pre_nest_auth').parent().hide();
+		$('#nestLogin').attr('style','display:none');
+		$('.splButton-primary').attr('style','display:none');
+	}
+	else if(typeof theCode != 'undefined')
+	{
+		$('#pre_nest_auth').parent().hide();
+		$('#no_client_id').parent().hide();
+		$('#nestLogin').attr('style','display:none');
+		$("#\\/nest\\/nestauth\\/default\\/code_id").val(theCode);
+	}
+	else
+	{
+		$('#post_nest_auth').parent().hide();
+		$('#no_client_id').parent().hide();
+		var returnTo=encodeURIComponent(window.location.origin + Splunk.util.make_full_url('/manager/'+Splunk.util.getCurrentApp()+'/apps/local/'+Splunk.util.getCurrentApp()+'/setup?action=edit'));
+		var oauthURL='https://www.nest.com/api/oauth2/authorize?response_type=code&client_id='+clientId+'&redirect_uri='+returnTo
+		$('#nestLogin').attr('href',oauthURL);
+		$('.splButton-primary').attr('style','display:none');
+	}
+
+});
+</script>
+		]]></text>
+		<input field="oauth2_client_id">
+			<label>Client ID</label>
+			<type>text</type>
+		</input>
+		<text><![CDATA[
+			<span id="no_client_id">It doesn't look like you have set your client_id and client_secret in the Nest modular input. Before you
+			can authenticate to Nest, please update the <a href="/manager/NestAddonforSplunk/data/inputs/nest">Nest Modular Input</a> with a valid
+			client ID and client secret, then return to this setup page.</span>
+		]]></text>
+		<text><![CDATA[
+			<span id="pre_nest_auth">Please click "Login With Nest" to begin the OAuth authentication process. You will need to log into
+			Nest, click "Grant access to Nest", and then save the Splunk configuration when complete.</span>
+		]]></text>
+		<text><![CDATA[
+			<span id="post_nest_auth">Please click "Save" within <span class="time_limit">30 seconds</span> to complete your Nest authentication.
+			This will validate the OAuth code and begin collecting data.</span>
+		]]></text>
+		<text><![CDATA[<a id="nestLogin" class="button-nest" href="">Login With Nest</a>]]></text>
+		<input field="code">
+			<label>Code</label>
+			<type>text</type>
+		</input>
+	</block>
+</setup>
