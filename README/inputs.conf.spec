@@ -9,3 +9,5 @@ nest_client_id = <string>
 nest_client_secret = <string>
 * Nest API client secret for the client ID which is used to refresh the OAuth tokens
 
+nest_code = <string>
+* Nest API client auth PIN code

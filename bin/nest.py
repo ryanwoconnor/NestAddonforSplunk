@@ -126,12 +126,32 @@ SCHEME = """<scheme>
             <arg name="name">
                 <title>Resource name</title>
                 <description>The Nest resource name without the leading nest://.</description>
+                <required_on_edit>false</required_on_edit>
+                <required_on_create>true</required_on_create>
             </arg>
-
             <arg name="nest_access_token">
-                <title>Nest access_token</title>
-                <description>Your Nest access_token. See README.md for details</description>
-                <validation>validate(match('nest_access_token','^c\.\w{144}$'), "Ensure access_token is correct")</validation>
+                <title>Nest Access Token</title>
+                <description>The Nest access token - this is usually filled in automatically</description>
+                <required_on_edit>false</required_on_edit>
+                <required_on_create>false</required_on_create>
+            </arg>
+            <arg name="nest_client_id">
+                <title>Nest client_id</title>
+                <description>This is usually filled in automatically, unless you need to override it</description>
+                <required_on_edit>true</required_on_edit>
+                <required_on_create>true</required_on_create>
+            </arg>
+            <arg name="nest_client_secret">
+                <title>Nest client_secret</title>
+                <description>This is usually filled in automatically, unless you need to override it</description>
+                <required_on_edit>true</required_on_edit>
+                <required_on_create>true</required_on_create>
+            </arg>
+            <arg name="nest_code">
+                <title>Nest code</title>
+                <description><![CDATA[Your Nest code. Get the Nest code from here: <a href="https://home.nest.com/login/oauth2?client_id=clientIDstate=STATE">https://home.nest.com/login/oauth2?client_id=clientId&state=STATE</a>]]></description>
+                <required_on_edit>false</required_on_edit>
+                <required_on_create>true</required_on_create>
             </arg>
         </args>
     </endpoint>
