@@ -1,0 +1,70 @@
+import splunk.admin as admin
+import splunk.entity as en
+import urllib, json
+
+class ConfigApp(admin.MConfigHandler):
+    sys.stderr.write('starting app config handler\n')
+    def setup(self):
+        sys.stderr.write('starting setup\n')
+        if self.requestedAction == admin.ACTION_EDIT:
+            for arg in ['code', 'nest_client_id', 'disabled']:
+                self.supportedArgs.addOptArg(arg)
+
+    def handleList(self, confInfo):
+        sys.stderr.write('starting list handler\n')
+        inputDict = self.readConf("inputs")
+        if None != inputDict:
+            for stanza, settings in inputDict.items():
+                for key, val in settings.items():
+                    if key in ['nest_client_id'] and val in [None, '']:
+                        val = ''
+                    if key in ['nest_client_secret'] and val in [None, '']:
+                        val = ''
+                    if key in ['nest_access_token'] and val in [None, '']:
+                        val = ''
+                    if key in ['code'] and val in [None, '']:
+                        val = ''
+                    confInfo[stanza].append(key, val)
+
+    def handleEdit(self, confInfo):
+        sys.stderr.write('starting edit handler\n')
+        name = self.callerArgs.id
+        args = self.callerArgs
+
+        inputDict = self.readConf("inputs")
+
+	for stanza, setting in inputDict.items():
+          if stanza == 'nest://' + self.callerArgs.data['name']:
+
+            client_id = setting['nest_client_id']
+            client_secret = setting['nest_client_secret']
+            access_token = setting['nest_access_token']
+
+            endpoint = 'https://api.home.nest.com/oauth2/access_token'
+
+            code = self.callerArgs.data['code'][0]
+
+            params = {}
+            params['client_id'] = client_id
+            params['code'] = code
+            params['client_secretclient_secret'] = 'STATE'
+            params['grant_type'] = 'authorization_code'
+
+            p = urllib.urlencode(params)
+            f = urllib.urlopen(endpoint, p)
+            codes = json.loads(f.read())
+
+            output = { 'nest_access_token': [], 'nest_refresh_token': [] }
+
+            output['nest_access_token'].append(codes['access_token'])
+
+            self.writeConf('inputs', stanza, output)
+
+            en.getEntities('data/inputs/nest/_reload', sessionKey = self.getSessionKey(), namespace='NestAddonforSplunk', owner='nobody')
+
+
+    def handleCreate(self, confInfo):
+        sys.stderr.write('begin create handler\n')
+
+
+admin.init(ConfigApp, admin.CONTEXT_NONE)
