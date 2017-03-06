@@ -91,23 +91,18 @@ def enforce_retention(sessionKey):
     
     return True
 
-def clean_children():
-    for p in proc:
-        p.terminate()
-
 #set initial veriables
 sys.stdout = Unbuffered(sys.stdout)
 splunk_home = os.path.expandvars("$SPLUNK_HOME")
 splunk_pid = open(os.path.join(splunk_home,"var","run", "splunk", "conf-mutator.pid"), 'rb').read()
 sessionKey = sys.stdin.readline().strip()
-logger("variables initialized")
+logger("variables initialized: splunk_home="+splunk_home+" splunk_pid="+splunk_pid)
 
 #enforce the required retention policy
 enforce_retention(sessionKey)
 
 #start the real work
 #Read in all Access Tokens from nest_tokens.conf
-atexit.register(clean_children)
 
 proc = []
 settings = splunk.clilib.cli_common.getMergedConf("nest_tokens")
@@ -119,11 +114,17 @@ for item in settings.iteritems():
         devices.start()
         proc.append(devices)
 
+def clean_children(proc):
+    for p in proc:
+        p.terminate()
+
+atexit.register(clean_children, proc)
+
 #Create a Process to Check if Splunk is running and kill all child processes if Splunk dies or Splunk PID Changes
 if check_splunk(splunk_pid,proc):
-    clean_children()
+    clean_children(proc)
 
 for sig in (SIGABRT, SIGBREAK, SIGILL, SIGINT, SIGSEGV, SIGTERM):
-    signal(sig, clean_children)
+    signal(sig, clean_children(proc))
 
 sys.exit()
