@@ -10,7 +10,7 @@ import sys
 import platform
 import subprocess
 import splunk.rest
-import urrllib
+import urllib
 
 class Unbuffered:
     def __init__(self, stream):
