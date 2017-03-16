@@ -121,7 +121,7 @@ def get_access_token(stanza_name):
             lines = []
             with open(os.path.join(splunk_home,"etc","apps", "NestAddonforSplunk", "local", "nest_tokens.conf")) as file:
                 for line in file:
-                    line = line.replace(key, nest_access_token)
+                    line = line.replace(token, nest_access_token)
                     lines.append(line)
             with open(os.path.join(splunk_home,"etc","apps", "NestAddonforSplunk", "local", "nest_tokens.conf"), 'w') as outfile:
                 for line in lines:
