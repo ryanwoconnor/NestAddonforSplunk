@@ -91,6 +91,36 @@ def enforce_retention(sessionKey):
     
     return True
 
+def get_access_token(stanza_name):
+    for key in stanza_name[1].iteritems():
+        token = key[1]
+        if len(token) == 146:
+            #token is access_code
+            return token
+        elif len(token) == 8:
+            #token is pincode
+            endpoint = 'https://api.home.nest.com/oauth2/access_token'
+            client_id = 'f4151b70-db18-43ac-a12b-1fbcd5f1cba9'
+            client_secret = 'mdM3hEligo2PfGBsOMsaHFdvI'
+
+            params = {}
+            params['client_id'] = client_id
+            params['code'] = token
+            params['client_secret'] = client_secret
+            params['grant_type'] = 'authorization_code'
+
+            p = urllib.urlencode(params)
+            f = urllib.urlopen(endpoint, p)
+            codes = json.loads(f.read())
+
+            nest_access_token = codes['access_token']
+            #update "key" in the appropriate stanza and write to config files - maybe using restapi
+            return nest_access_token
+        else:
+            logger("ERROR key is invalid in stanza" + stanza)
+            return False
+            
+
 #set initial veriables
 sys.stdout = Unbuffered(sys.stdout)
 splunk_home = os.path.expandvars("$SPLUNK_HOME")
@@ -107,12 +137,11 @@ enforce_retention(sessionKey)
 proc = []
 settings = splunk.clilib.cli_common.getMergedConf("nest_tokens")
 for item in settings.iteritems():
-    for key in item[1].iteritems():
-        token = key[1]
-        #Create a new process for each nest key (access_token)
-        devices = Process(target=get_devices, args=(token,))
-        devices.start()
-        proc.append(devices)
+    token = get_access_token(item)
+    #Create a new process for each nest key (access_token)
+    devices = Process(target=get_devices, args=(token,))
+    devices.start()
+    proc.append(devices)
 
 def clean_children(proc):
     for p in proc:
