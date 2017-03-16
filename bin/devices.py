@@ -94,11 +94,13 @@ def enforce_retention(sessionKey):
 def get_access_token(stanza_name):
     for key in stanza_name[1].iteritems():
         token = key[1]
+        # access_codes seem to be 146 characters long. we have not seen any case where it is different.
         if len(token) == 146:
-            #token is access_code
+            #when the token is access_code, just return this value as-is
             return token
+        # pincodes are 8 characters long - they are one-time-use, so we can over-write is when we're done getting the access_code
         elif len(token) == 8:
-            #token is pincode
+            #when the token is pincode, then use it to get the access_code from nest oauth
             endpoint = 'https://api.home.nest.com/oauth2/access_token'
             client_id = 'f4151b70-db18-43ac-a12b-1fbcd5f1cba9'
             client_secret = 'mdM3hEligo2PfGBsOMsaHFdvI'
@@ -114,12 +116,19 @@ def get_access_token(stanza_name):
             codes = json.loads(f.read())
 
             nest_access_token = codes['access_token']
-            #update "key" in the appropriate stanza and write to config files - maybe using restapi
+            #TODO: make this part more "splunky"
+            lines = []
+            with open(os.path.join(splunk_home,"etc","apps", "NestAddonforSplunk", "local", "nest_tokens.conf")) as file:
+                for line in file:
+                    line = line.replace(key, nest_access_token)
+                    lines.append(line)
+            with open(os.path.join(splunk_home,"etc","apps", "NestAddonforSplunk", "local", "nest_tokens.conf"), 'w') as outfile:
+                for line in lines:
+                    outfile.write(line)
             return nest_access_token
         else:
             logger("ERROR key is invalid in stanza" + stanza)
             return False
-            
 
 #set initial veriables
 sys.stdout = Unbuffered(sys.stdout)
