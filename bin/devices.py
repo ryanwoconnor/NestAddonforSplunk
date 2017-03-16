@@ -10,6 +10,7 @@ import sys
 import platform
 import subprocess
 import splunk.rest
+import urrllib
 
 class Unbuffered:
     def __init__(self, stream):
@@ -91,6 +92,45 @@ def enforce_retention(sessionKey):
     
     return True
 
+def get_access_token(stanza_name):
+    for key in stanza_name[1].iteritems():
+        token = key[1]
+        # access_codes seem to be 146 characters long. we have not seen any case where it is different.
+        if len(token) == 146:
+            #when the token is access_code, just return this value as-is
+            return token
+        # pincodes are 8 characters long - they are one-time-use, so we can over-write is when we're done getting the access_code
+        elif len(token) == 8:
+            #when the token is pincode, then use it to get the access_code from nest oauth
+            endpoint = 'https://api.home.nest.com/oauth2/access_token'
+            client_id = 'f4151b70-db18-43ac-a12b-1fbcd5f1cba9'
+            client_secret = 'mdM3hEligo2PfGBsOMsaHFdvI'
+
+            params = {}
+            params['client_id'] = client_id
+            params['code'] = token
+            params['client_secret'] = client_secret
+            params['grant_type'] = 'authorization_code'
+
+            p = urllib.urlencode(params)
+            f = urllib.urlopen(endpoint, p)
+            codes = json.loads(f.read())
+
+            nest_access_token = codes['access_token']
+            #TODO: make this part more "splunky"
+            lines = []
+            with open(os.path.join(splunk_home,"etc","apps", "NestAddonforSplunk", "local", "nest_tokens.conf")) as file:
+                for line in file:
+                    line = line.replace(token, nest_access_token)
+                    lines.append(line)
+            with open(os.path.join(splunk_home,"etc","apps", "NestAddonforSplunk", "local", "nest_tokens.conf"), 'w') as outfile:
+                for line in lines:
+                    outfile.write(line)
+            return nest_access_token
+        else:
+            logger("ERROR key is invalid in stanza" + stanza)
+            return False
+
 #set initial veriables
 sys.stdout = Unbuffered(sys.stdout)
 splunk_home = os.path.expandvars("$SPLUNK_HOME")
@@ -107,12 +147,11 @@ enforce_retention(sessionKey)
 proc = []
 settings = splunk.clilib.cli_common.getMergedConf("nest_tokens")
 for item in settings.iteritems():
-    for key in item[1].iteritems():
-        token = key[1]
-        #Create a new process for each nest key (access_token)
-        devices = Process(target=get_devices, args=(token,))
-        devices.start()
-        proc.append(devices)
+    token = get_access_token(item)
+    #Create a new process for each nest key (access_token)
+    devices = Process(target=get_devices, args=(token,))
+    devices.start()
+    proc.append(devices)
 
 def clean_children(proc):
     for p in proc:
