@@ -8,6 +8,7 @@ Installation for this add-on is fairly straight forward and you can be up and ru
 
 If you need assistance in obtaining an access_token you can use the following instructions or reach out on Splunk Answers. 
 
+
 ### Obtaining a PIN for your Nest Account:
 
 Simply use the following instructions to get started collecting your data in Splunk. 
@@ -47,4 +48,3 @@ Troubleshooting:
     ```
     key = api_key
     ```
-
