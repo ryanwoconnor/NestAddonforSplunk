@@ -4,9 +4,9 @@ System Requirements: This app is tested and working on Ubuntu and OSX 10.11.
 
 Installation:
 ---------------------
-Installation for this add-on is fairly straight forward and you can be up and running in a matter of minutes. Start out by obtaining an access_token. 
+Installation for this add-on is fairly straight forward and you can be up and running in a matter of minutes. Start out by obtaining a PIN.  
 
-If you need assistance in obtaining an access_token you can use the following instructions or reach out on Splunk Answers. 
+If you need assistance in obtaining a PIN you can use the following instructions or reach out on Splunk Answers. 
 
 ### Obtaining a PIN for your Nest Account:
 
