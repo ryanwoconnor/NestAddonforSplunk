@@ -99,34 +99,6 @@ def get_access_token(stanza_name):
         if len(token) == 146:
             #when the token is access_code, just return this value as-is
             return token
-        # pincodes are 8 characters long - they are one-time-use, so we can over-write is when we're done getting the access_code
-        elif len(token) == 8:
-            #when the token is pincode, then use it to get the access_code from nest oauth
-            endpoint = 'https://api.home.nest.com/oauth2/access_token'
-            client_id = 'f4151b70-db18-43ac-a12b-1fbcd5f1cba9'
-            client_secret = 'mdM3hEligo2PfGBsOMsaHFdvI'
-
-            params = {}
-            params['client_id'] = client_id
-            params['code'] = token
-            params['client_secret'] = client_secret
-            params['grant_type'] = 'authorization_code'
-
-            p = urllib.urlencode(params)
-            f = urllib.urlopen(endpoint, p)
-            codes = json.loads(f.read())
-
-            nest_access_token = codes['access_token']
-            #TODO: make this part more "splunky"
-            lines = []
-            with open(os.path.join(splunk_home,"etc","apps", "NestAddonforSplunk", "local", "nest_tokens.conf")) as file:
-                for line in file:
-                    line = line.replace(token, nest_access_token)
-                    lines.append(line)
-            with open(os.path.join(splunk_home,"etc","apps", "NestAddonforSplunk", "local", "nest_tokens.conf"), 'w') as outfile:
-                for line in lines:
-                    outfile.write(line)
-            return nest_access_token
         else:
             logger("ERROR key is invalid in stanza" + stanza)
             return False
