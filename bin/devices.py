@@ -51,7 +51,8 @@ def get_devices(access_token):
     headers = {"Authorization": "bearer ", "Accept": "text/event-stream"}
     response = requests.get("https://developer-api.nest.com/?auth=" + access_token, headers=headers, stream=True, timeout=3600)
     for line in response.iter_lines():
-        if line == 'event: put':
+        sys.stderr.write(line)
+	if line == 'event: put':
             continue
         if line == 'event: keep-alive':
             continue
@@ -106,10 +107,12 @@ def get_access_token(stanza_name):
 #set initial veriables
 sys.stdout = Unbuffered(sys.stdout)
 splunk_home = os.path.expandvars("$SPLUNK_HOME")
+print(splunk_home)
 splunk_pid = open(os.path.join(splunk_home,"var","run", "splunk", "conf-mutator.pid"), 'rb').read()
+print(splunk_pid)
 sessionKey = sys.stdin.readline().strip()
 logger("variables initialized: splunk_home="+splunk_home+" splunk_pid="+splunk_pid)
-
+print("variables initialized: splunk_home="+splunk_home+" splunk_pid="+splunk_pid)
 #enforce the required retention policy
 enforce_retention(sessionKey)
 
@@ -119,12 +122,16 @@ enforce_retention(sessionKey)
 proc = []
 settings = splunk.clilib.cli_common.getMergedConf("nest_tokens")
 for item in settings.iteritems():
-    token = get_access_token(item)
-    #Create a new process for each nest key (access_token)
-    devices = Process(target=get_devices, args=(token,))
-    devices.start()
-    proc.append(devices)
-
+    
+    if get_access_token(item):
+        token = get_access_token(item)
+        sys.stderr.write("found token: "+ item + ":" + token + "\n")
+	#Create a new process for each nest key (access_token)
+        devices = Process(target=get_devices, args=(token,))
+        devices.start()
+        proc.append(devices)
+    else:
+        sys.stderr.write("No Token Found for Nest Devices \n")
 def clean_children(proc):
     for p in proc:
         p.terminate()
