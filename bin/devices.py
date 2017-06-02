@@ -51,7 +51,6 @@ def get_devices(access_token):
     headers = {"Authorization": "bearer ", "Accept": "text/event-stream"}
     response = requests.get("https://developer-api.nest.com/?auth=" + access_token, headers=headers, stream=True, timeout=3600)
     for line in response.iter_lines():
-        sys.stderr.write(line)
 	if line == 'event: put':
             continue
         if line == 'event: keep-alive':
@@ -120,18 +119,18 @@ enforce_retention(sessionKey)
 #Read in all Access Tokens from nest_tokens.conf
 
 proc = []
-settings = splunk.clilib.cli_common.getMergedConf("nest_tokens")
+settings = splunk.clilib.cli_common.getMergedConf('nest_tokens')
 for item in settings.iteritems():
-    
-    if get_access_token(item):
-        token = get_access_token(item)
-        sys.stderr.write("found token: "+ item + ":" + token + "\n")
-	#Create a new process for each nest key (access_token)
-        devices = Process(target=get_devices, args=(token,))
-        devices.start()
-        proc.append(devices)
-    else:
-        sys.stderr.write("No Token Found for Nest Devices \n")
+    if item[0] != 'default':
+        if get_access_token(item):
+            token = str(get_access_token(item))
+            sys.stderr.write("found token: "+ str(item) + ":" + token + "\n")
+	    #Create a new process for each nest key (access_token)
+            devices = Process(target=get_devices, args=(token,))
+            devices.start()
+            proc.append(devices)
+        else:
+            sys.stderr.write("No Token Found for Nest Devices \n")
 def clean_children(proc):
     for p in proc:
         p.terminate()
