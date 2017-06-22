@@ -1,28 +1,35 @@
 import splunk
 
+
 class Send(splunk.rest.BaseRestHandler):
 
-    def handle_POST(self):
-        sessionKey = self.sessionKey
+	def handle_POST(self):
+		sessionKey = self.sessionKey
+		stanza_name = ''
+		key = ''
 
-        try:
-            post_path = '/services/admin/users/batman'
-            new_roles = { "roles" : ["user","admin"] }
-            serverContent = splunk.rest.simpleRequest(post_path, sessionKey=sessionKey, postargs=new_roles, method='POST', raiseAllErrors=True)
+		try:
+			payload = str(self.request['payload'])
+			#self.response.write(payload)
+			
+			for el in payload.split('&'):
+				key, value = el.split('=')
+				if 'stanza_name' in key:
+					stanza_name = value
+				if 'key' in key:
+					key = value
+				if stanza_name is '':
+					self.response.setStatus(400)
+					self.response.write('A stanza name  must be provided.')
+				else:
+					post_path = '/servicesNS/-/-/configs/conf-nest_tokens/' + stanza_name
+					new_key = { "key" : "test" }
+					serverContent = splunk.rest.simpleRequest(post_path,sessionKey=sessionKey,postargs=str(new_key),method='POST',raiseAllErrors=True)
 
-        except Exception, e:
-            self.response.write(e)
+		except Exception, e:
+			self.response.write(e)
 
-        try:
-            self.response.setHeader("content-type', 'text/html")
-            self.response.write("<p>Success!</p>")
-
-        except:
-            self.response.setHeader("content-type', 'text/html")
-            self.response.write("<p>Uh oh! Something's wrong!</p>")
-
-    #handle verbs, otherwise Splunk will throw an error
-    handle_GET = handle_POST
+	handle_GET = handle_POST
 
 class Receive(splunk.rest.BaseRestHandler):
 	def handle_GET(self):
