@@ -15,15 +15,15 @@ class Send(splunk.rest.BaseRestHandler):
 			for el in payload.split('&'):
 				key, value = el.split('=')
 				if 'stanza_name' in key:
-					stanza_name = value
+					stanza_name = str(value)
 				if 'key' in key:
 					key = str(value)
 				if stanza_name is '':
 					self.response.setStatus(400)
 					self.response.write('A stanza name  must be provided.')
 				else:
-					post_path = '/servicesNS/nobody/NestAddonforSplunk/configs/conf-nest_tokens/' + stanza_name
-					new_key = {'key': key }
+					post_path = '/servicesNS/admin/NestAddonforSplunk/configs/conf-nest_tokens/'+stanza_name
+					new_key = {'key':key}
 					serverContent = splunk.rest.simpleRequest(post_path,sessionKey=sessionKey,postargs=new_key,method='POST',raiseAllErrors=True)
 
 		except Exception, e:

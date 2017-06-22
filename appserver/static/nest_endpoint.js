@@ -22,7 +22,7 @@ $(document.body).on('click', '#postButton', function(e) {
     		var value = field['value'];
 		data_obj[key] = value;	
 	});
-	service.post('/services/send', data_obj, function(err, response) {
+	service.post('/services/nestsend', data_obj, function(err, response) {
 
 	if(err) {
 		console.log('error: ', err);
@@ -57,7 +57,7 @@ $(document.body).on('click', '#getButton', function(e) {
 
     cleanData(get_data);
 
-    service.get('/services/receive', cleaned_data, function(err, response) {
+    service.get('/services/nestreceive', cleaned_data, function(err, response) {
 
         if(err) {
             console.log('error: ', err);
