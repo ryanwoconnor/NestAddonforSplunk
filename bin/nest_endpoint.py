@@ -1,30 +1,28 @@
 import splunk
-
-
 class Send(splunk.rest.BaseRestHandler):
 
 	def handle_POST(self):
 		sessionKey = self.sessionKey
-		stanza_name = ''
-		key = ''
-
+		name = ''
+		apikey = ''
+		args = {}
 		try:
 			payload = str(self.request['payload'])
-			self.response.write(payload)
-			
+			#self.response.write(payload)
+
+
 			for el in payload.split('&'):
-				key, value = el.split('=')
-				if 'stanza_name' in key:
-					stanza_name = str(value)
-				if 'key' in key:
-					key = str(value)
-				if stanza_name is '':
-					self.response.setStatus(400)
-					self.response.write('A stanza name  must be provided.')
-				else:
-					post_path = '/servicesNS/admin/NestAddonforSplunk/configs/conf-nest_tokens/'+stanza_name
-					new_key = {'key':key}
-					serverContent = splunk.rest.simpleRequest(post_path,sessionKey=sessionKey,postargs=new_key,method='POST',raiseAllErrors=True)
+		    		key, value = el.split('=')
+		        	if 'name' in key:
+                			name = str(value)
+        			if 'key' in key:
+                			apikey = str(value)
+        			else:
+                			if name is '' or apikey is '':
+						break;
+                			args={'name':name,'key':apikey}
+					post_path = '/servicesNS/nobody/NestAddonforSplunk/configs/conf-nest_tokens'
+					serverContent = splunk.rest.simpleRequest(post_path, sessionKey=sessionKey, postargs=args, method='POST', raiseAllErrors=True)
 
 		except Exception, e:
 			self.response.write(e)
