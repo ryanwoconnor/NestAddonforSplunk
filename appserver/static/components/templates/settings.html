@@ -1,0 +1,58 @@
+<div id="nestSettings">
+    <h1>Nest Add-On Configuration</h1>
+    <div id="newAPIFormWrapper">
+        <h2>Add New API Key</h2>
+        <form id="nestKeyForm" class="form-line">
+            <div class="inlineFormComponent">
+                <input type="text" class="form-control mb-2 mr-sm-2 mb-sm-0"
+                       id="apiKeyName" name="apiKeyName" placeholder="Name of key e.g. Home">
+            </div>
+            <div class="inlineFormComponent">
+            <input type="text" class="form-control mb-2 mr-sm-2 mb-sm-0"
+                   id="apiKeyValue" name="apiKeyValue" placeholder="API Key">
+            </div>
+            <button type="submit" id="addKey" class="btn btn-primary">Add Key</button>
+        </form>
+    </div>
+    <div id="keyListing">
+        <h2>Current API Keys</h2>
+        <% if(loaded) { %>
+        <table class="table table-chrome table-striped wrapped-results">
+            <thead class="shared-resultstable-resultstableheader">
+                <tr>
+                    <th>Key Name</th>
+                    <th>Key Value</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                <% if(!_.isEmpty(keys)) { %>
+                    <% for (var key in keys) { %>
+                        <% if (keys.hasOwnProperty(key)) { %>
+                        <tr>
+                            <td>
+                                <%- key %>
+                            </td>
+                            <td>
+                                <%- keys[key] %>
+                            </td>
+                            <td>
+                                <a class="deleteKey" href="#" data-delete="<%- key %>">Delete</a>
+                            </td>
+                        </tr>
+                        <% } %>
+                    <% } %>
+                <% } else { %>
+                    <tr>
+                        <td>It looks like you don't have any API keys. Add one!</td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                <% } %>
+            </tbody>
+        </table>
+        <% } else { %>
+         <p>Loading...</p>
+        <% } %>
+    </div>
+</div>

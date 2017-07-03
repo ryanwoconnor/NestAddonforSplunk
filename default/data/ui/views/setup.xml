@@ -1,0 +1,13 @@
+<dashboard script="index.js"
+           stylesheet="configure.css"
+           hideAppBar="true"
+           isDashboard="false"
+           hideEdit="true">
+  <row>
+    <panel id="nestConfig">
+      <html>
+        <div class="container" id="nestConfigWrapper"/>
+      </html>
+    </panel>
+  </row>
+</dashboard>

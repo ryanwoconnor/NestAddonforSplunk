@@ -1,0 +1,3 @@
+<setup>
+    <block task="setup" type="redirect" />
+</setup>

@@ -1,40 +1,34 @@
 import splunk
-class Send(splunk.rest.BaseRestHandler):
-
-	def handle_POST(self):
-		sessionKey = self.sessionKey
-		name = ''
-		apikey = ''
-		args = {}
-		try:
-			payload = str(self.request['payload'])
-			#self.response.write(payload)
+import splunk.bundle as bundle
+import splunk.admin as admin
+import json
 
 
-			for el in payload.split('&'):
-		    		key, value = el.split('=')
-		        	if 'name' in key:
-                			name = str(value)
-        			if 'key' in key:
-                			apikey = str(value)
-        			else:
-                			if name is '' or apikey is '':
-						break;
-                			args={'name':name,'key':apikey}
-					post_path = '/servicesNS/nobody/NestAddonforSplunk/configs/conf-nest_tokens'
-					serverContent = splunk.rest.simpleRequest(post_path, sessionKey=sessionKey, postargs=args, method='POST', raiseAllErrors=True)
+class NestApp(admin.MConfigHandler):
 
-		except Exception, e:
-			self.response.write(e)
+    def setup(self):
+        if self.requestedAction == admin.ACTION_EDIT:
+            for arg in ['keys']:
+                self.supportedArgs.addOptArg(arg)
 
-	handle_GET = handle_POST
 
-class Receive(splunk.rest.BaseRestHandler):
-	def handle_GET(self):
-      		sessionKey = self.sessionKey
-        	try:
-            		get_path = '/servicesNS/admin/NestAddonforSplunk/configs/conf-nest_tokens?output_mode=json'
-			serverResponse, serverContent = splunk.rest.simpleRequest(get_path, sessionKey=sessionKey, method='GET', raiseAllErrors=True)
-    			self.response.write(serverContent)
-        	except Exception, e:
-            		self.response.write(e)
+    def handleList(self, confInfo):
+        confDict = self.readConf("nest_tokens")
+
+        if None != confDict:
+            for key, val in confDict['api_keys'].items():
+                confInfo['keys'].append(key, val)
+
+
+    def handleEdit(self, confInfo):
+        name = self.callerArgs.id
+        args = self.callerArgs
+
+        keys = json.loads(args['keys'][0])
+        if len(keys) == 0:
+            self.writeConf('nest_tokens', 'api_keys', {'keys': '{}'})
+        else:
+            self.writeConf('nest_tokens', 'api_keys', {'keys': json.dumps(keys)})
+
+# initialize the handler
+admin.init(NestApp, admin.CONTEXT_NONE)
