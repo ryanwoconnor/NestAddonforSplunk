@@ -7,10 +7,7 @@ import time
 import splunk.clilib.cli_common
 import json
 import sys
-import platform
-import subprocess
 import splunk.rest
-import urllib
 
 class Unbuffered:
     def __init__(self, stream):
@@ -20,6 +17,7 @@ class Unbuffered:
         self.stream.flush()
     def __getattr__(self, attr):
         return getattr(self.stream, attr)
+
 def logger(message):
     sys.stderr.write(message.strip() + "\n")
 
@@ -48,24 +46,26 @@ def check_splunk(process_id,procs):
     return True
 
 def get_devices(access_token):
+    sys.stdout.write("Get devices...")
     headers = {"Authorization": "bearer ", "Accept": "text/event-stream"}
     response = requests.get("https://developer-api.nest.com/?auth=" + access_token, headers=headers, stream=True, timeout=3600)
     for line in response.iter_lines():
-	if line == 'event: put':
+        if line == 'event: put':
             continue
         if line == 'event: keep-alive':
             continue
         if line == 'data: null':
             continue
         output_str = line.replace('data: {"path"','{"path"')
-        sys.stdout.write(output_str)
+        logger('Nest response: ' + output_str)
     return True
 
 def enforce_retention(sessionKey):
     #ensure the Nest Index Retention is only 10 days
     if len(sessionKey) == 0:
-       logger("ERROR Did not receive a session key. Please enable passAuth in inputs.conf for this script")
-       exit(2)
+        sys.stdout.write('Response from Nest: ' + output_str)
+        logger("ERROR Did not receive a session key. Please enable passAuth in inputs.conf for this script")
+        exit(2)
     
     try:
         nest_input = splunk.rest.simpleRequest('/services/data/inputs/script/.%252Fbin%252Fdevices.py?output_mode=json', method='GET', sessionKey=sessionKey, raiseAllErrors=True)
@@ -92,16 +92,14 @@ def enforce_retention(sessionKey):
     
     return True
 
-def get_access_token(stanza_name):
-    for key in stanza_name[1].iteritems():
-        token = key[1]
-        # access_codes seem to be 146 characters long. we have not seen any case where it is different.
-        if len(token) == 146:
-            #when the token is access_code, just return this value as-is
-            return token
-        else:
-            logger("ERROR key is invalid in stanza" + stanza)
-            return False
+def get_access_token(token):
+    if len(token) == 146:
+        #when the token is access_code, just return this value as-is
+        sys.stderr.write("Successfully found token \n")
+        return token
+    else:
+        sys.stderr.write("ERROR token is invalid" + token)
+        return False
 
 #set initial veriables
 sys.stdout = Unbuffered(sys.stdout)
@@ -111,7 +109,6 @@ splunk_pid = open(os.path.join(splunk_home,"var","run", "splunk", "conf-mutator.
 print(splunk_pid)
 sessionKey = sys.stdin.readline().strip()
 logger("variables initialized: splunk_home="+splunk_home+" splunk_pid="+splunk_pid)
-print("variables initialized: splunk_home="+splunk_home+" splunk_pid="+splunk_pid)
 #enforce the required retention policy
 enforce_retention(sessionKey)
 
@@ -120,17 +117,21 @@ enforce_retention(sessionKey)
 
 proc = []
 settings = splunk.clilib.cli_common.getMergedConf('nest_tokens')
-for item in settings.iteritems():
-    if item[0] != 'default':
-        if get_access_token(item):
-            token = str(get_access_token(item))
-            sys.stderr.write("found token: "+ str(item) + ":" + token + "\n")
-	    #Create a new process for each nest key (access_token)
-            devices = Process(target=get_devices, args=(token,))
-            devices.start()
-            proc.append(devices)
-        else:
-            sys.stderr.write("No Token Found for Nest Devices \n")
+keys_str = settings['api_keys']['keys']
+keys = json.loads(keys_str)
+
+for apiKeyName, apiKeyVal in keys.iteritems():
+    sys.stderr.write("Getting Nest API Keys...! \n")
+    if get_access_token(apiKeyVal):
+        token = str(get_access_token(apiKeyVal))
+        sys.stderr.write("found token: "+ str(apiKeyVal) + ":" + token + "\n")
+        #Create a new process for each nest key (access_token)
+        devices = Process(target=get_devices, args=(token,))
+        devices.start()
+        proc.append(devices)
+    else:
+        sys.stderr.write("No Token Found for Nest Devices \n")
+
 def clean_children(proc):
     for p in proc:
         p.terminate()
