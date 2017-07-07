@@ -46,7 +46,6 @@ def check_splunk(process_id,procs):
     return True
 
 def get_devices(access_token):
-    sys.stdout.write("Get devices...")
     headers = {"Authorization": "bearer ", "Accept": "text/event-stream"}
     response = requests.get("https://developer-api.nest.com/?auth=" + access_token, headers=headers, stream=True, timeout=3600)
     for line in response.iter_lines():
@@ -56,15 +55,22 @@ def get_devices(access_token):
             continue
         if line == 'data: null':
             continue
-        output_str = line.replace('data: {"path"','{"path"')
-        logger('Nest response: ' + output_str)
+        if line == '':
+	    continue
+	output_str = line.replace('data: {"path"','{"path"')
+	sys.stdout.write("{\"test\":123}")
+	sys.stdout.flush()
+	sys.stdout.write(output_str)
+        sys.stdout.flush()
+	logger('Nest response: ' + output_str)
     return True
 
 def enforce_retention(sessionKey):
     #ensure the Nest Index Retention is only 10 days
     if len(sessionKey) == 0:
         sys.stdout.write('Response from Nest: ' + output_str)
-        logger("ERROR Did not receive a session key. Please enable passAuth in inputs.conf for this script")
+        sys.stdout.flush()
+	logger("ERROR Did not receive a session key. Please enable passAuth in inputs.conf for this script")
         exit(2)
     
     try:
@@ -102,8 +108,10 @@ def get_access_token(token):
         return False
 
 #set initial veriables
-sys.stdout = Unbuffered(sys.stdout)
+#sys.stdout = Unbuffered(sys.stdout)
 splunk_home = os.path.expandvars("$SPLUNK_HOME")
+sys.stdout.write("SPLUNK_HOME is defined as:" + splunk_home)
+sys.stdout.flush()
 print(splunk_home)
 splunk_pid = open(os.path.join(splunk_home,"var","run", "splunk", "conf-mutator.pid"), 'rb').read()
 print(splunk_pid)
@@ -111,6 +119,8 @@ sessionKey = sys.stdin.readline().strip()
 logger("variables initialized: splunk_home="+splunk_home+" splunk_pid="+splunk_pid)
 #enforce the required retention policy
 enforce_retention(sessionKey)
+sys.stdout.write("{\"test\":123}")
+sys.stdout.flush()
 
 #start the real work
 #Read in all Access Tokens from nest_tokens.conf
@@ -121,10 +131,10 @@ keys_str = settings['api_keys']['keys']
 keys = json.loads(keys_str)
 
 for apiKeyName, apiKeyVal in keys.iteritems():
-    sys.stderr.write("Getting Nest API Keys...! \n")
-    if get_access_token(apiKeyVal):
-        token = str(get_access_token(apiKeyVal))
-        sys.stderr.write("found token: "+ str(apiKeyVal) + ":" + token + "\n")
+    #sys.stderr.write("Getting Nest API Keys...! \n")
+    token = str(get_access_token(apiKeyVal))
+    if token:
+        sys.stderr.write("found token: :" + token + "\n")
         #Create a new process for each nest key (access_token)
         devices = Process(target=get_devices, args=(token,))
         devices.start()
