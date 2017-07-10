@@ -7,10 +7,7 @@ import time
 import splunk.clilib.cli_common
 import json
 import sys
-import platform
-import subprocess
 import splunk.rest
-import urllib
 
 class Unbuffered:
     def __init__(self, stream):
@@ -49,28 +46,25 @@ def check_splunk(process_id,procs):
     return True
 
 def get_devices(access_token):
-	logger("trying to get data for " + access_token)
-	headers = {"Authorization": "bearer ", "Accept": "text/event-stream"}
-	response = requests.get("https://developer-api.nest.com/?auth=" + access_token, headers=headers, stream=True, timeout=3600)
-    	for line in response.iter_lines():
-		if line == 'event: put':
-			continue
-		if line == 'event: keep-alive':
-			continue
-		if line == 'data: null':
-			continue
-        	#output_str = line.replace('data: {"path"','{"path"')
-		#output_str = line.replace('data: {"path"','{"path"')
-		output_str = line.replace('data: {"path":"/",','{')
-		logger(output_str)
-		print(output_str)
-	return True
+
+    headers = {"Authorization": "bearer ", "Accept": "text/event-stream"}
+    response = requests.get("https://developer-api.nest.com/?auth=" + access_token, headers=headers, stream=True, timeout=3600)
+    for line in response.iter_lines():
+        if line == 'event: put':
+            continue
+        if line == 'event: keep-alive':
+            continue
+        if line == 'data: null':
+            continue
+        output_str = line.replace('data: {"path"','{"path"')
+        sys.stdout.write(output_str)
+    return True
 
 def enforce_retention(sessionKey):
     #ensure the Nest Index Retention is only 10 days
     if len(sessionKey) == 0:
-	logger("ERROR Did not receive a session key. Please enable passAuth in inputs.conf for this script")
-	exit(2)
+        logger("ERROR Did not receive a session key. Please enable passAuth in inputs.conf for this script")
+        exit(2)
     
     try:
         nest_input = splunk.rest.simpleRequest('/services/data/inputs/script/.%252Fbin%252Fdevices.py?output_mode=json', method='GET', sessionKey=sessionKey, raiseAllErrors=True)
@@ -100,10 +94,9 @@ def enforce_retention(sessionKey):
 def get_access_token(token):
     if len(token) == 146:
         #when the token is access_code, just return this value as-is
-        sys.stderr.write("Successfully found token \n")
         return token
     else:
-        sys.stderr.write("ERROR token is invalid" + token)
+        logger("ERROR token is invalid" + token)
         return False
 
 #set initial veriables
@@ -111,9 +104,11 @@ sys.stdout = Unbuffered(sys.stdout)
 splunk_home = os.path.expandvars("$SPLUNK_HOME")
 print(splunk_home)
 splunk_pid = open(os.path.join(splunk_home,"var","run", "splunk", "conf-mutator.pid"), 'rb').read()
+
 print(splunk_pid)
 sessionKey = sys.stdin.readline().strip()
 logger("variables initialized: splunk_home="+splunk_home+" splunk_pid="+splunk_pid)
+print("variables initialized: splunk_home="+splunk_home+" splunk_pid="+splunk_pid)
 #enforce the required retention policy
 enforce_retention(sessionKey)
 
@@ -126,9 +121,10 @@ keys_str = settings['api_keys']['keys']
 keys = json.loads(keys_str)
 
 for apiKeyName, apiKeyVal in keys.iteritems():
-    token = str(get_access_token(apiKeyVal))
-    if token:
-        sys.stderr.write("found token: :" + token + "\n")
+    sys.stderr.write("Getting Nest API Keys...! \n")
+    if get_access_token(apiKeyVal):
+        token = str(get_access_token(apiKeyVal))
+        logger("found token: "+ str(apiKeyVal) + ":" + token + "\n")
         #Create a new process for each nest key (access_token)
         devices = Process(target=get_devices, args=(token,))
         devices.start()
