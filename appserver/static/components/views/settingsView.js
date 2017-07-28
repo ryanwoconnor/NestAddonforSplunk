@@ -49,18 +49,31 @@ define([
             var that = this;
             var authCode = '';
 
-            service.get('/servicesNS/nobody/NestAddonforSplunk/nest/nest_config/keys', authCode,
+            service.get('/servicesNS/nobody/NestAddonforSplunk/nest/nest_config', authCode,
                 function(err, response) {
 
                     if(err) {
-                        that.model.set({ failed : true, error : err });
+                        that.model.set({ failed : true, error : err, _method : "" });
                     } else {
 
-                        var keys = response.data.entry[0].content.keys;
+                        var data = response.data.entry;
+                        var keys = {};
 
-                        delete keys['eai:acl'];
+                        //delete keys["eai:acl"];
 
-                        that.model.set({ keys : JSON.parse(keys), loaded : true });
+                        _.each(data, function(v,k) {
+                            var arr = [];
+                            var realm_obj = {};
+                            var realm = v.content.realm;
+                            var username = v.content.username;
+                            arr.push(realm_obj['username'] = username);
+                            keys[realm] = arr;
+                        });
+
+                        console.log('All the datas: ', data);
+                        console.log('Returned value: ', keys);
+
+                        that.model.set({ keys : keys, loaded : true });
 
                     }
                 }
@@ -96,7 +109,9 @@ define([
             keys_obj[key_name] = key_val;
 
             if(!errors) {
-                service.post('/servicesNS/nobody/NestAddonforSplunk/nest/nest_config/keys', { "keys" : JSON.stringify(keys_obj) },
+
+                service.post('/servicesNS/nobody/NestAddonforSplunk/nest/nest_config/edit/', {
+                    "keys" : JSON.stringify(data), "method" : JSON.stringify({ "type" : "post" }) },
 
                     function(err, response) {
 
@@ -104,11 +119,23 @@ define([
                             that.model.set({ failed : true, error : err });
                         } else {
 
-                            var keys = response.data.entry[0].content.keys;
+                            keys = that.model.get("keys");
 
-                            delete keys['eai:acl'];
+                            console.log('Data????? ', data);
 
-                            that.model.set({ keys : JSON.parse(keys) });
+                            _.each(data, function(v,k) {
+                                var arr = [];
+                                var realm_obj = {};
+                                var realm = data["apiKeyName"];
+                                var username = data["apiKeyName"];
+                                arr.push(realm_obj['username'] = username);
+                                keys[realm] = arr;
+                            });
+
+                            console.log('All the datas: ', data);
+                            console.log('Returned value: ', keys);
+
+                            that.model.set({ keys : keys });
 
                             that.render();
 
@@ -126,9 +153,12 @@ define([
             var delete_item = $(e.currentTarget).data('delete');
             var keys_obj = this.model.get("keys");
 
+            var data = { "apiKeyName" : delete_item };
+
             delete keys_obj[delete_item];
 
-            service.post('/servicesNS/nobody/NestAddonforSplunk/nest/nest_config/keys', { "keys" : JSON.stringify(keys_obj) },
+            service.post('/servicesNS/nobody/NestAddonforSplunk/nest/nest_config/edit', {
+                "keys" : JSON.stringify(data), "method" : JSON.stringify({ "type" : "delete" }) },
 
                 function(err, response) {
 
@@ -136,11 +166,11 @@ define([
                         that.model.set({ failed : true, error : err });
                     } else {
 
-                        var keys = response.data.entry[0].content.keys;
+                        keys = that.model.get("keys");
 
-                        delete keys['eai:acl'];
+                        delete keys[delete_item];
 
-                        that.model.set({ keys : JSON.parse(keys) });
+                        that.model.set({ keys : keys });
 
                         that.render();
 

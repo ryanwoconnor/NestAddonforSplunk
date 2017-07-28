@@ -11,7 +11,8 @@ define([
             failed: false,
             error: "",
             test: "",
-            loaded: false
+            loaded: false,
+            _method: ""
         }
 
     });

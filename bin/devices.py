@@ -116,9 +116,39 @@ enforce_retention(sessionKey)
 #Read in all Access Tokens from nest_tokens.conf
 
 proc = []
-settings = splunk.clilib.cli_common.getMergedConf('nest_tokens')
-keys_str = settings['api_keys']['keys']
-keys = json.loads(keys_str)
+keys_dict = {}
+
+try:
+
+    sessionKey = self.getSessionKey()
+    get_path = '/servicesNS/nobody/NestAddonforSplunk/storage/passwords?output_mode=json'
+    serverResponse = splunk.rest.simpleRequest(get_path, sessionKey=sessionKey, method='GET',
+                                               raiseAllErrors=True)
+
+    jsonObj = json.loads(serverResponse[1])
+
+    i = 0
+
+    for realm_key, realm_value in jsonObj.iteritems():
+        realm = ''
+        clear_password = ''
+        props_dict = {}
+        if realm_key == "entry":
+            while i < len(realm_value):
+                for entry_key, entry_val in realm_value[i].iteritems():
+                    if entry_key == "content":
+                        realm = entry_val['realm']
+                        for k, v in entry_val.iteritems():
+                            if k == "clear_password":
+                                keys_dict[k] = v
+                        i += 1
+
+except Exception, e:
+    raise Exception("Could not GET credentials: %s" % (str(e)))
+
+#keys_str = settings['api_keys']['keys']
+keys = json.loads(keys_dict)
+
 
 for apiKeyName, apiKeyVal in keys.iteritems():
     sys.stderr.write("Getting Nest API Keys...! \n")
@@ -131,6 +161,8 @@ for apiKeyName, apiKeyVal in keys.iteritems():
         proc.append(devices)
     else:
         sys.stderr.write("No Token Found for Nest Devices \n")
+
+
 
 def clean_children(proc):
     for p in proc:
