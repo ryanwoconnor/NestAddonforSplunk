@@ -37,3 +37,10 @@
 input.error {
     border: 1px solid #cf0101;
 }
+#error-message {
+    margin-left: -20px;
+    background-color: #dc4646;
+    padding: 10px 20px 3px;
+    width: 100%;
+    color: #fff;
+}

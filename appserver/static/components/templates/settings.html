@@ -1,5 +1,12 @@
 <div id="nestSettings">
     <h1>Nest Add-On Configuration</h1>
+
+    <% if (failed) { %>
+        <div id="error-message">
+            <p><%- error %></p>
+        </div>
+    <% } %>
+
     <div id="newAPIFormWrapper">
         <h2>Add New API Key</h2>
         <form id="nestKeyForm" class="form-line">

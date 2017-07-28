@@ -103,7 +103,8 @@ class NestApp(admin.MConfigHandler):
 
         elif method == 'delete':
 
-            entity = entity_name + ":" + entity_name + ":"
+            entity_url_encode = entity_name.replace(" ", "%20")
+            entity = entity_url_encode + ":" + entity_url_encode + ":"
 
             try:
                 sessionKey = self.getSessionKey()

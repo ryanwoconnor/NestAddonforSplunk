@@ -116,7 +116,13 @@ define([
                     function(err, response) {
 
                         if(err) {
-                            that.model.set({ failed : true, error : err });
+
+                            console.log('Error: ', err);
+
+                            var text = err.data.messages[0].text;
+
+                            that.model.set({ failed : true, error : text });
+
                         } else {
 
                             keys = that.model.get("keys");
@@ -135,7 +141,7 @@ define([
                             console.log('All the datas: ', data);
                             console.log('Returned value: ', keys);
 
-                            that.model.set({ keys : keys });
+                            that.model.set({ keys : keys, failed : false });
 
                             that.render();
 
