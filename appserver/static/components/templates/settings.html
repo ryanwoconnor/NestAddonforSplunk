@@ -5,6 +5,14 @@
         <div id="error-message">
             <p><%- error %></p>
         </div>
+    <% } else if (!failed && _method=="post") { %>
+        <div id="success-message">
+            <p>Successfully added a new API Token.</p>
+        </div>
+    <% } else if (!failed && _method=="delete") { %>
+        <div id="success-message">
+            <p>Successfully deleted the API Token.</p>
+        </div>
     <% } %>
 
     <div id="newAPIFormWrapper">
@@ -12,7 +20,8 @@
         <form id="nestKeyForm" class="form-line">
             <div class="inlineFormComponent">
                 <input type="text" class="form-control mb-2 mr-sm-2 mb-sm-0"
-                       id="apiKeyName" name="apiKeyName" placeholder="Name of key e.g. Home">
+                       id="apiKeyName" name="apiKeyName" placeholder="Name for Key">
+                <span class="help-block">Provide a useful name such as 'Home Nest'.</span>
             </div>
             <div class="inlineFormComponent">
             <input type="text" class="form-control mb-2 mr-sm-2 mb-sm-0"
@@ -48,7 +57,6 @@
                 <% } else { %>
                     <tr>
                         <td>It looks like you don't have any API keys. Add one!</td>
-                        <td></td>
                         <td></td>
                     </tr>
                 <% } %>

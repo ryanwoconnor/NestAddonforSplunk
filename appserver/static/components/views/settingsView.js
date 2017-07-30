@@ -141,7 +141,7 @@ define([
                             console.log('All the datas: ', data);
                             console.log('Returned value: ', keys);
 
-                            that.model.set({ keys : keys, failed : false });
+                            that.model.set({ keys : keys, failed : false, _method : "post" });
 
                             that.render();
 
@@ -176,7 +176,7 @@ define([
 
                         delete keys[delete_item];
 
-                        that.model.set({ keys : keys });
+                        that.model.set({ keys : keys, failed : false, _method : "delete" });
 
                         that.render();
 
@@ -193,6 +193,12 @@ define([
 
             if(this.model.get('loaded') === false) {
                 this._getSettings();
+            }
+
+            if(this.model.get("failed") === false) {
+                setTimeout(function() {
+                    $(document).find("#success-message").fadeOut();
+                }, 3000);
             }
 
             return this;

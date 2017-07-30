@@ -44,3 +44,10 @@ input.error {
     width: 100%;
     color: #fff;
 }
+#success-message {
+    margin-left: -20px;
+    background-color: #61a845;
+    padding: 10px 20px 3px;
+    width: 100%;
+    color: #fff;
+}
