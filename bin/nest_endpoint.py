@@ -3,10 +3,6 @@ import splunk.admin as admin
 import splunk.rest
 import json
 import sys
-import re
-import ast
-from collections import namedtuple
-
 
 class NestApp(admin.MConfigHandler):
 
@@ -33,9 +29,7 @@ class NestApp(admin.MConfigHandler):
             i = 0
 
             for realm_key, realm_value in jsonObj.iteritems():
-                realm = ''
-                clear_password = ''
-                props_dict = {}
+
                 if realm_key == "entry":
                     while i < len(realm_value):
                         for entry_key, entry_val in realm_value[i].iteritems():
@@ -48,29 +42,6 @@ class NestApp(admin.MConfigHandler):
 
         except Exception, e:
             raise Exception("Could not GET credentials: %s" % (str(e)))
-
-        """
-        confDict = self.readConf("passwords")
-
-        stanzas = {}
-
-        if None != confDict:
-            for stanza in confDict:
-                sys.stderr.write("_STANZA: " + str(stanza) + "\n")
-
-                stanza = re.match(r'credential::*([^:]+)', str(stanza)).group(1)
-                if stanza != 'keys':
-                    confInfo['keys'].append(stanza, "")
-
-            sys.stderr.write("_confInfo: " + str(confInfo['keys']) + "\n")
-        """
-
-        """
-        if None != confDict:
-            for key, val in confDict['api_keys'].items():
-                confInfo['keys'].append(key, val)
-        """
-
 
     def handleEdit(self, confInfo):
         name = self.callerArgs.id
@@ -113,22 +84,6 @@ class NestApp(admin.MConfigHandler):
                                                           raiseAllErrors=True)
             except Exception, e:
                 raise Exception("Could not post credentials: %s" % (str(e)))
-
-        """
-        if len(keys) == 0:
-            self.writeConf('nest_tokens', 'api_keys', {'keys': '{}'})
-        else:
-            self.writeConf('nest_tokens', 'api_keys', {'keys': json.dumps(keys)})
-        
-            try:
-                sessionKey = self.getSessionKey()
-                post_path = '/servicesNS/nobody/NestAddonforSplunk/storage/passwords'
-                creds = {"name" : last_key, "password" : json.dumps(last_value)}
-                serverContent = splunk.rest.simpleRequest(post_path, sessionKey=sessionKey, postargs=creds, method='POST',
-                                                      raiseAllErrors=True)
-            except Exception, e:
-                raise Exception("Could not post credentials: %s" % (str(e)))
-        """
 
 
 # initialize the handler
