@@ -4,6 +4,7 @@ import splunk.rest
 import json
 import sys
 
+
 class NestApp(admin.MConfigHandler):
 
     def logger(message):
@@ -17,27 +18,30 @@ class NestApp(admin.MConfigHandler):
 
     def handleList(self, confInfo):
 
+        my_app = "NestAddonforSplunk"
+
         try:
 
             sessionKey = self.getSessionKey()
             get_path = '/servicesNS/nobody/NestAddonforSplunk/storage/passwords?output_mode=json'
             serverResponse = splunk.rest.simpleRequest(get_path, sessionKey=sessionKey, method='GET',
                                                            raiseAllErrors=True)
-
             jsonObj = json.loads(serverResponse[1])
 
             i = 0
 
             for realm_key, realm_value in jsonObj.iteritems():
-
                 if realm_key == "entry":
                     while i < len(realm_value):
                         for entry_key, entry_val in realm_value[i].iteritems():
                             if entry_key == "content":
+                                app_context = realm_value[i]["acl"]["app"]
+                                sys.stderr.write("APP???: " + str(app_context) + "\n")
                                 realm = entry_val['realm']
-                                for k, v in entry_val.iteritems():
-                                    if k != "clear_password":
-                                        confInfo[realm].append(k, v)
+                                if app_context == my_app:
+                                    for k, v in entry_val.iteritems():
+                                        if k != "clear_password":
+                                            confInfo[realm].append(k, v)
                                 i += 1
 
         except Exception, e:
@@ -47,7 +51,7 @@ class NestApp(admin.MConfigHandler):
         name = self.callerArgs.id
         args = self.callerArgs
 
-        sys.stderr.write("all args: " + str(args))
+        sys.stderr.write("POSTed DATA: " + str(args) + "\n")
 
         method_obj = json.loads(args['method'][0])
         keys = json.loads(args['keys'][0])
@@ -58,6 +62,8 @@ class NestApp(admin.MConfigHandler):
 
             entity_value = keys['apiKeyValue']
 
+            sys.stderr.write("POSTED args: " +  str(args))
+
             sys.stderr.write("keys: " + str(keys) + "\n")
             sys.stderr.write("method: " + str(method) + "\n")
             sys.stderr.write("key name: " + str(entity_name) + "\n")
@@ -65,10 +71,15 @@ class NestApp(admin.MConfigHandler):
 
             try:
                 sessionKey = self.getSessionKey()
-                post_path = '/servicesNS/nobody/NestAddonforSplunk/storage/passwords'
+                post_path = '/servicesNS/nobody/NestAddonforSplunk/storage/passwords?output_mode=json'
                 creds = {"name": entity_name, "password": entity_value, "realm": entity_name}
                 serverResponse, serverContent = splunk.rest.simpleRequest(post_path, sessionKey=sessionKey, postargs=creds, method='POST',
                                                           raiseAllErrors=True)
+
+                sys.stderr.write('serverResponse: ' +  str(serverResponse) + "\n")
+                sys.stderr.write('serverContent: ' + str(serverContent))
+
+
             except Exception, e:
                 raise Exception("Could not post credentials: %s" % (str(e)))
 
