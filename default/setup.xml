@@ -1,5 +1,5 @@
 <setup>
-    <block task="setup" type="redirect" />
+    <block task="setup" title="Setup" type="redirect"/>
 </setup>
 <!-- <setup>
 <block title="Add new credentials" endpoint="storage/passwords" entity="_new">
