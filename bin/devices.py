@@ -145,10 +145,9 @@ try:
                         realm = entry_val['realm']
                         if app_context == my_app:
                             for k, v in entry_val.iteritems():
-                                if k != "clear_password":
+                                if k == "clear_password":
                                     keys_dict[k] = v
                         i += 1
-
     for apiKeyName, apiKeyVal in keys_dict.iteritems():
         logger("Getting Nest API Keys...! \n")
         if get_access_token(apiKeyVal):
