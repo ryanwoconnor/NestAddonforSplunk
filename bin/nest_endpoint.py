@@ -36,7 +36,6 @@ class NestApp(admin.MConfigHandler):
                         for entry_key, entry_val in realm_value[i].iteritems():
                             if entry_key == "content":
                                 app_context = realm_value[i]["acl"]["app"]
-                                sys.stderr.write("APP???: " + str(app_context) + "\n")
                                 realm = entry_val['realm']
                                 if app_context == my_app:
                                     for k, v in entry_val.iteritems():
@@ -51,8 +50,6 @@ class NestApp(admin.MConfigHandler):
         name = self.callerArgs.id
         args = self.callerArgs
 
-        sys.stderr.write("POSTed DATA: " + str(args) + "\n")
-
         method_obj = json.loads(args['method'][0])
         keys = json.loads(args['keys'][0])
         entity_name = keys['apiKeyName']
@@ -62,22 +59,12 @@ class NestApp(admin.MConfigHandler):
 
             entity_value = keys['apiKeyValue']
 
-            sys.stderr.write("POSTED args: " +  str(args))
-
-            sys.stderr.write("keys: " + str(keys) + "\n")
-            sys.stderr.write("method: " + str(method) + "\n")
-            sys.stderr.write("key name: " + str(entity_name) + "\n")
-            sys.stderr.write("value name: " + str(entity_value) + "\n")
-
             try:
                 sessionKey = self.getSessionKey()
                 post_path = '/servicesNS/nobody/NestAddonforSplunk/storage/passwords?output_mode=json'
                 creds = {"name": entity_name, "password": entity_value, "realm": entity_name}
                 serverResponse, serverContent = splunk.rest.simpleRequest(post_path, sessionKey=sessionKey, postargs=creds, method='POST',
                                                           raiseAllErrors=True)
-
-                sys.stderr.write('serverResponse: ' +  str(serverResponse) + "\n")
-                sys.stderr.write('serverContent: ' + str(serverContent))
 
 
             except Exception, e:

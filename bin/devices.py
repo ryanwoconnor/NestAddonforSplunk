@@ -82,8 +82,7 @@ def enforce_retention(sessionKey):
 
     nest_input_json = json.loads(nest_input[1])
     nest_index_name = nest_input_json['entry'][0]['content']['index']
-    nest_sourcetype = nest_input_json['entry'][0]['content']['sourcetype']
-    
+
     try:
         nest_index = splunk.rest.simpleRequest('/services/data/indexes/' + nest_index_name  + '?output_mode=json', method='GET', sessionKey=sessionKey, raiseAllErrors=True)
     except Exception:
@@ -117,7 +116,6 @@ splunk_pid = open(os.path.join(splunk_home,"var","run", "splunk", "conf-mutator.
 print(splunk_pid)
 sessionKey = sys.stdin.readline().strip()
 logger("variables initialized: splunk_home="+splunk_home+" splunk_pid="+splunk_pid)
-print("variables initialized: splunk_home="+splunk_home+" splunk_pid="+splunk_pid)
 #enforce the required retention policy
 enforce_retention(sessionKey)
 
@@ -134,26 +132,25 @@ try:
 
     jsonObj = json.loads(serverResponse[1])
 
-    sys.stderr.write("_jsonObj: " + str(jsonObj))
+    my_app = "NestAddonforSplunk"
 
     i = 0
 
     for realm_key, realm_value in jsonObj.iteritems():
-        realm = ''
-        clear_password = ''
-        props_dict = {}
         if realm_key == "entry":
             while i < len(realm_value):
                 for entry_key, entry_val in realm_value[i].iteritems():
                     if entry_key == "content":
+                        app_context = realm_value[i]["acl"]["app"]
                         realm = entry_val['realm']
-                        for k, v in entry_val.iteritems():
-                            if k == "clear_password":
-                                keys_dict[k] = v
+                        if app_context == my_app:
+                            for k, v in entry_val.iteritems():
+                                if k != "clear_password":
+                                    keys_dict[k] = v
                         i += 1
 
     for apiKeyName, apiKeyVal in keys_dict.iteritems():
-        sys.stderr.write("Getting Nest API Keys...! \n")
+        logger("Getting Nest API Keys...! \n")
         if get_access_token(apiKeyVal):
             token = str(get_access_token(apiKeyVal))
             logger("found token: " + str(apiKeyVal) + ":" + token + "\n")
