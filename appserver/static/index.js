@@ -40,7 +40,7 @@ require([
 
         render: function() {
 
-            document.title = "Nest Addon for Splunk Setup";
+            document.title = "Nest Add-On Setup";
 
             var that = this;
             $(this.$el).html(_.template(NestConfigTemplate));
