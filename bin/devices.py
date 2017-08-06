@@ -11,7 +11,7 @@ import sys
 import splunk.rest
 import re
 
-log_level=0
+log_level=1
 
 class Unbuffered:
     def __init__(self, stream):
@@ -147,19 +147,39 @@ try:
     my_app = "NestAddonforSplunk"
 
     i = 0
-
+    if log_level==1:
+        logger('Beginning searching for keys')
     for realm_key, realm_value in jsonObj.iteritems():
         if realm_key == "entry":
             while i < len(realm_value):
                 for entry_key, entry_val in realm_value[i].iteritems():
+                    key=""
+                    value=""
                     if entry_key == "content":
                         app_context = realm_value[i]["acl"]["app"]
                         realm = entry_val['realm']
                         if app_context == my_app:
+                            if log_level==1:
+                                logger('Found a stanza for the Nest Add-on')
                             for k, v in entry_val.iteritems():
+                                if log_level==1:
+                                    logger('Checking for a clear_password')
                                 if k == "clear_password":
-                                    keys_dict[k] = v
+                                    value=v
+                                    if log_level==1:
+                                        logger("Found value:"+v)
+                                if k == "username":
+                                    key=v
+                                    if log_level==1:
+                                        logger("Found key:"+v)
+                            if log_level==1:
+                                logger('Done searching stanza')
+                            if key and value:
+                                keys_dict[key] = value
                         i += 1
+    if log_level==1:
+        for key, value in keys_dict.iteritems() :
+            logger('Dictionary Entry:'+key+':'+value)
     for apiKeyName, apiKeyVal in keys_dict.iteritems():
         logger("Getting Nest API Keys...! \n")
         if get_access_token(apiKeyVal):
