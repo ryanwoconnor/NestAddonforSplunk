@@ -43,7 +43,7 @@ def check_splunk(process_id,procs):
         for p in procs:
             #If any of the child processes isn't running, notify and drop out of the loop
             if not p.is_alive():
-                logger("ERROR detected child process for devices longer running")
+                logger("ERROR detected child process for devices no longer running")
                 devices_running = False
         #If the processes are all running, go back to sleep
         time.sleep(1)
@@ -180,22 +180,21 @@ try:
     if log_level==1:
         for key, value in keys_dict.iteritems() :
             logger('Dictionary Entry:'+key+':'+value)
-    for apiKeyName, apiKeyVal in keys_dict.iteritems():
-        logger("Getting Nest API Keys...! \n")
-        if get_access_token(apiKeyVal):
-            token = str(get_access_token(apiKeyVal))
-            if log_level==1:
-                logger("found token: " + str(apiKeyVal) + ":" + token + "\n")
-            # Create a new process for each nest key (access_token)
-            devices = Process(target=get_devices, args=(token,))
-            devices.start()
-            proc.append(devices)
-        else:
-            sys.stderr.write("No Token Found for Nest Devices \n")
 
 except Exception, e:
     raise Exception("Could not GET credentials: %s" % (str(e)))
-
+for apiKeyName, apiKeyVal in keys_dict.iteritems():
+    logger("Getting Nest API Keys...! \n")
+    if get_access_token(apiKeyVal):
+        token = str(get_access_token(apiKeyVal))
+        if log_level==1:
+            logger("found token: " + str(apiKeyVal) + ":" + token + "\n")
+        # Create a new process for each nest key (access_token)
+        devices = Process(target=get_devices, args=(token,))
+        devices.start()
+        proc.append(devices)
+    else:
+        sys.stderr.write("No Token Found for Nest Devices \n")
 
 def clean_children(proc):
     for p in proc:
