@@ -54,31 +54,28 @@ def get_devices(access_token):
         logger("Beginning REST Call")
     headers = {"Authorization": "bearer ", "Accept": "text/event-stream"}
     sys.stdout = Unbuffered(sys.stdout)
-    try:
-        response_stream = requests.get("https://developer-api.nest.com/?auth="+access_token, headers=headers, stream=True, timeout=3600)
-        for line in response_stream.iter_lines(3, decode_unicode=None):
-            if line == 'event: put':
-                continue
-            if line == 'event: keep-alive':
-                continue
-            if line == 'data: null':
-                continue
-            if log_level==1:
-                logger("Cleaning String..."+"\n")
-            output_str = line.replace('data: {"path"','{"path"')
-            cleaned_str = re.sub(r'access_token\":\"([a-z]?.[\w+].[^\",]*)', 'access_token" : "<encrypted>', output_str)
-            if log_level==1:
-                logger("Done Cleaning String"+"\n")
-                logger("Outputting String"+"\n")
-            sys.stdout.write(cleaned_str)
-            sys.stdout.flush()
-            if log_level==1:
-                logger(output_str+"\n")
-                logger("Done outputting string"+"\n")
-        return True
+    response_stream = requests.get("https://developer-api.nest.com/?auth="+access_token, headers=headers, stream=True, timeout=3600)
+    for line in response_stream.iter_lines(3, decode_unicode=None):
+        if line == 'event: put':
+            continue
+        if line == 'event: keep-alive':
+            continue
+        if line == 'data: null':
+            continue
+        if log_level==1:
+            logger("Cleaning String..."+"\n")
+        output_str = line.replace('data: {"path"','{"path"')
+        cleaned_str = re.sub(r'access_token\":\"([a-z]?.[\w+].[^\",]*)', 'access_token" : "<encrypted>', output_str)
+        if log_level==1:
+            logger("Done Cleaning String"+"\n")
+            logger("Outputting String"+"\n")
+        sys.stdout.write(cleaned_str)
+        sys.stdout.flush()
+        if log_level==1:
+            logger(output_str+"\n")
+            logger("Done outputting string"+"\n")
+    return True
 
-    except requests.exceptions.RequestException as e:
-        print('error', e)
 
 def enforce_retention(sessionKey):
     #ensure the Nest Index Retention is only 10 days
@@ -122,10 +119,10 @@ def get_access_token(token):
 sys.stdout = Unbuffered(sys.stdout)
 sys.stdout.flush()
 splunk_home = os.path.expandvars("$SPLUNK_HOME")
-#print(splunk_home)
+logger("Splunk Home is:" + splunk_home)
 splunk_pid = open(os.path.join(splunk_home,"var","run", "splunk", "conf-mutator.pid"), 'rb').read()
 
-#print(splunk_pid)
+logger("Splunk PID is:"+splunk_pid)
 sessionKey = sys.stdin.readline().strip()
 logger("variables initialized: splunk_home="+splunk_home+" splunk_pid="+splunk_pid)
 #enforce the required retention policy
