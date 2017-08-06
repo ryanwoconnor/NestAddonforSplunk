@@ -184,7 +184,8 @@ try:
         logger("Getting Nest API Keys...! \n")
         if get_access_token(apiKeyVal):
             token = str(get_access_token(apiKeyVal))
-            logger("found token: " + str(apiKeyVal) + ":" + token + "\n")
+            if log_level==1:
+                logger("found token: " + str(apiKeyVal) + ":" + token + "\n")
             # Create a new process for each nest key (access_token)
             devices = Process(target=get_devices, args=(token,))
             devices.start()
