@@ -62,6 +62,8 @@ def get_devices(access_token):
             continue
         if line == 'data: null':
             continue
+        if "blocked" in line:
+	    time.sleep(60)
         if log_level==1:
             logger("Cleaning String..."+"\n")
         output_str = line.replace('data: {"path"','{"path"')
