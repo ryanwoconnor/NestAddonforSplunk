@@ -71,7 +71,7 @@ def check_splunk(process_id, procs):
 
 
 def get_devices(access_token):
-    logger.info("Beginning REST Call")
+    logger.debug("Beginning REST Call")
     headers = {"Authorization": "bearer ", "Accept": "text/event-stream"}
     sys.stdout = Unbuffered(sys.stdout)
     response_stream = requests.get("https://developer-api.nest.com/?auth=" + access_token, headers=headers, stream=True,
@@ -85,15 +85,15 @@ def get_devices(access_token):
             continue
         if "blocked" in line:
             sleep(60)
-        logger.info("Cleaning String..." + "\n")
+        logger.debug("Cleaning String..." + "\n")
         output_str = line.replace('data: {"path"', '{"path"')
         cleaned_str = re.sub(r'access_token\":\"([a-z]?.[\w+].[^\",]*)', 'access_token" : "<encrypted>', output_str)
-        logger.info("Done Cleaning String")
-        logger.info("Outputting String")
+        logger.debug("Done Cleaning String")
+        logger.debug("Outputting String")
         sys.stdout.write(cleaned_str)
         sys.stdout.flush()
-        logger.info(output_str)
-        logger.info("Done outputting string")
+        logger.debug(output_str)
+        logger.debug("Done outputting string")
     return True
 
 
@@ -186,13 +186,14 @@ try:
                         if app_context == my_app:
                             logger.info('Found a stanza for the Nest Add-on')
                             for k, v in entry_val.iteritems():
-                                logger.info('Checking for a clear_password')
+                                logger.debug('Checking for a clear_password')
                                 if k == "clear_password":
                                     value = v
-                                    logger.info("Found unencrypted token value.")
+                                    logger.debug("Found unencrypted token value.")
                                 if k == "username":
                                     key = v
-                                    logger.info("Found key:" + v)
+                                    logger.info("Found key")
+                                    logger.debug("Found key:" + v)
                             logger.info('Done searching stanza')
                             if key and value:
                                 keys_dict[key] = value
