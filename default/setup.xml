@@ -1,17 +1,3 @@
 <setup>
     <block task="setup" title="Setup" type="redirect"/>
 </setup>
-<!-- <setup>
-<block title="Add new credentials" endpoint="storage/passwords" entity="_new">
-  <input field="name">
-    <label>API Key Name</label>
-    <type>text</type>
-  </input>
-
-  <input field="password">
-    <label>API Key</label>
-    <type>password</type>
-  </input>
-
-</block>
-</setup> -->
