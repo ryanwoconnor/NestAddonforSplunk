@@ -157,7 +157,7 @@ logger.info("variables initialized: splunk_home=" + splunk_home + " splunk_pid="
 enforce_retention(sessionKey)
 
 # start the real work
-# Read in all Access Tokens from nest_tokens.conf
+# Read in all Access Tokens from nope.conf
 
 proc = []
 keys_dict = {}
@@ -171,39 +171,20 @@ try:
 
     my_app = "NestAddonforSplunk"
 
-    i = 0
+    if len(jsonObj['entry']) == 0:
+        logger.warn("No credentials found.")
+    else:
+        for entry in jsonObj['entry']:
+            if entry['acl']['app'] != my_app:
+                continue
+            logger.info('Found a stanza for the Nest Add-on')
+            if 'clear_password' in entry['content'] and 'username' in entry['content']:
+                keys_dict[entry['content']['username']] = entry['content']['clear_password']
 
-    logger.info('Beginning search for keys')
-    for realm_key, realm_value in jsonObj.iteritems():
-        if realm_key == "entry":
-            while i < len(realm_value):
-                for entry_key, entry_val in realm_value[i].iteritems():
-                    key = ""
-                    value = ""
-                    if entry_key == "content":
-                        app_context = realm_value[i]["acl"]["app"]
-                        realm = entry_val['realm']
-                        if app_context == my_app:
-                            logger.info('Found a stanza for the Nest Add-on')
-                            for k, v in entry_val.iteritems():
-                                logger.debug('Checking for a clear_password')
-                                if k == "clear_password":
-                                    value = v
-                                    logger.debug("Found unencrypted token value.")
-                                if k == "username":
-                                    key = v
-                                    logger.info("Found key")
-                                    logger.debug("Found key:" + v)
-                            logger.info('Done searching stanza')
-                            if key and value:
-                                keys_dict[key] = value
-                        i += 1
-
-    #for key, value in keys_dict.iteritems():
-        #logger.info('Dictionary Entry:' + key + ':' + value)
 
 except Exception, e:
     raise Exception("Could not GET credentials: %s" % (str(e)))
+
 for apiKeyName, apiKeyVal in keys_dict.iteritems():
     logger.info("Getting Nest API Keys...!")
     if get_access_token(apiKeyVal):
