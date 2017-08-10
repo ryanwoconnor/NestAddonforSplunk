@@ -8,7 +8,7 @@ session_key = sys.stdin.readline().strip()
 def get_access_token(stanza_name):
     for key, val in stanza_name[1].iteritems():
         token = val
-        if len(token) > 5:
+        if len(token) == 146:
             return token
         else:
             logging.error("ERROR key is invalid in stanza" + str(val))
