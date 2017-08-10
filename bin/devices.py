@@ -173,6 +173,8 @@ try:
 
     if len(jsonObj['entry']) == 0:
         logger.warn("No credentials found.")
+        sleep(300)
+        sys.exit(0)
     else:
         for entry in jsonObj['entry']:
             if entry['acl']['app'] != my_app:
