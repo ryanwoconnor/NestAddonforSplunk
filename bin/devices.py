@@ -173,7 +173,7 @@ try:
 
     if len(jsonObj['entry']) == 0:
         logger.warn("No credentials found.")
-        sleep(300)
+        sleep(60)
         sys.exit(0)
     else:
         for entry in jsonObj['entry']:
