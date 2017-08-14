@@ -1,0 +1,53 @@
+/* -- Dashboard Overrides -- */
+.dashboard-body {
+    padding: 0 !important;
+}
+.dashboard-header {
+    display: none;
+}
+.loading-placeholder {
+    line-height: 200px;
+    margin: 0 auto;
+    position: absolute;
+    top: 100%;
+    text-align: center;
+    width: 100%;
+    left: 0;
+}
+.dashboard-row .dashboard-panel {
+    background: none !important;
+}
+.inlineFormComponent {
+    float: left;
+    margin-right: 5px;
+}
+#nestComponentsWrapper {
+    background-color: #fff;
+    padding: 10px 20px 20px;
+}
+#keyListing {
+    margin-top: 45px;
+    clear: both;
+}
+.error {
+    margin-bottom: 9px;
+    color: #cf0101;
+    display: block;
+}
+input.error {
+    border: 1px solid #cf0101;
+}
+#error-message {
+    margin-left: -20px;
+    background-color: #dc4646;
+    padding: 10px 20px 3px;
+    width: 100%;
+    color: #fff;
+}
+#success-message {
+    margin-left: -20px;
+    background-color: #61a845;
+    padding: 10px 20px 3px;
+    width: 100%;
+    color: #fff;
+}

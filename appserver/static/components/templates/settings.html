@@ -1,0 +1,70 @@
+<div id="nestSettings">
+    <h1>Nest Add-On Configuration</h1>
+
+    <% if (failed) { %>
+        <div id="error-message">
+            <p><%- error %></p>
+        </div>
+    <% } else if (!failed && _method=="post") { %>
+        <div id="success-message">
+            <p>Successfully added a new API Token.</p>
+        </div>
+    <% } else if (!failed && _method=="delete") { %>
+        <div id="success-message">
+            <p>Successfully deleted the API Token.</p>
+        </div>
+    <% } %>
+
+    <div id="newAPIFormWrapper">
+        <h2>Add New API Key</h2>
+        <p>Visit the following URL: <a href="https://home.nest.com/login/oauth2?client_id=f4151b70-db18-43ac-a12b-1fbcd5f1cba9&state=STATE">https://home.nest.com/login/oauth2?client_id=f4151b70-db18-43ac-a12b-1fbcd5f1cba9&state=STATE</a> and click accept to allow this app to query your device. <br></br>After authorizing this app, you will be granted an APIKey in a JSON Format like the following: {"api_key":"<strong>c.123456433</strong>"}. The bold section (not including quotes) is what you want to copy and add to the API Key box below.</p>
+	<form id="nestKeyForm" class="form-line">
+            <div class="inlineFormComponent">
+                <input type="text" class="form-control mb-2 mr-sm-2 mb-sm-0"
+                       id="apiKeyName" name="apiKeyName" placeholder="Name for Key">
+                <span class="help-block">Provide a useful name such as 'Home Nest'.</span>
+            </div>
+            <div class="inlineFormComponent">
+            <input type="text" class="form-control mb-2 mr-sm-2 mb-sm-0"
+                   id="apiKeyValue" name="apiKeyValue" placeholder="API Key">
+            </div>
+            <button type="submit" id="addKey" class="btn btn-primary">Add Key</button>
+        </form>
+    </div>
+    <div id="keyListing">
+        <h2>Current API Keys</h2>
+        <% if(loaded) { %>
+        <table class="table table-chrome table-striped wrapped-results">
+            <thead class="shared-resultstable-resultstableheader">
+                <tr>
+                    <th>Key Name</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                <% if(!_.isEmpty(keys)) { %>
+                    <% for (var key in keys) { %>
+                        <% if (keys.hasOwnProperty(key)) { %>
+                        <tr>
+                            <td>
+                                <%- key %>
+                            </td>
+                            <td>
+                                <a class="deleteKey" href="#" data-delete="<%- key %>">Delete</a>
+                            </td>
+                        </tr>
+                        <% } %>
+                    <% } %>
+                <% } else { %>
+                    <tr>
+                        <td>It looks like you don't have any API keys. Add one!</td>
+                        <td></td>
+                    </tr>
+                <% } %>
+            </tbody>
+        </table>
+        <% } else { %>
+         <p>Loading...</p>
+        <% } %>
+    </div>
+</div>
